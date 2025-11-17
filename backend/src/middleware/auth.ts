@@ -3,7 +3,7 @@ import User, { IUser } from "../models/user.model";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
-  user?: IUser;
+  user?: IUser & { id: string };
 }
 
 interface DecodedToken extends JwtPayload {
@@ -25,7 +25,9 @@ export const protect = async (
       token = req.headers.authorization.split(" ")[1];
 
       if (!token) {
-        return res.status(401).json({ message: "Not authorized, token missing" });
+        return res
+          .status(401)
+          .json({ message: "Not authorized, token missing" });
       }
 
       const decoded = jwt.verify(
