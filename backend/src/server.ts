@@ -3,7 +3,8 @@ import { app } from "./app";
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/modapazari";
+  process.env.MONGO_URI ||
+  "mongodb+srv://stephanieanyanwu605_db_user:ciEhwT2C8XhlSyuy@modapazari.jgdqtzw.mongodb.net/modapazri";
 
 mongoose
   .connect(MONGO_URI)
