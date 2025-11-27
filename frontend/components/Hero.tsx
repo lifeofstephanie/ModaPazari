@@ -30,7 +30,7 @@ export const Hero = () => {
   };
   return (
     <AnimatePresence>
-      <div className="bg-linear-to-b from-[#e0ebf5]  to-white h-[90vh] md:h-screen overflow-hidden   px-5 relative">
+      <div className="bg-linear-to-b from-[#e0ebf5]  to-white h-fit overflow-hidden   px-5 relative">
         <motion.div
           initial="hidden"
           animate="visible"
