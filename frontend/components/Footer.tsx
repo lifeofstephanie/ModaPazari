@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export const Footer = () => {
   return (
-    <div className="w-full min-h-[200px] bg-linear-to-t from-[#e0ebf5] to-white px-10 py-10">
+    <div className="w-full min-h-[200px] bg-linear-to-t from-[#e0ebf5] to-white md:px-10 py-10 px-5">
       <div className="flex gap-10 flex-wrap md:flex-nowrap ">
         <section className="flex flex-col gap-5">
           <Image src={"/images/logo.svg"} width={200} height={50} alt="Logo" />
