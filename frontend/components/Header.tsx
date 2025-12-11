@@ -1,6 +1,7 @@
 "use client";
 import { Handbag } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 export const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -24,12 +25,15 @@ export const Header = () => {
         <li className="cursor-pointer hover:text-[#7A2048]">WOMEN</li>
         <li className="cursor-pointer hover:text-[#7A2048]">TRENDING</li>
       </ul>
+
       <div
         className={`  text-center w-[500px] h-20 ${
           scrolled ? "bg-transparent" : "bg-white"
         }  [clip-path:polygon(0%_0%,100%_0%,80%_100%,20%_100%)] flex justify-center items-center`}
       >
-        <Image alt="logo" src="/images/logo.svg" width={200} height={50} />
+        <Link href={"/"}>
+          <Image alt="logo" src="/images/logo.svg" width={200} height={50} />
+        </Link>
       </div>
       <ul className="hidden md:flex gap-3 items-center text-sm">
         <li className="cursor-pointer hover:text-[#7A2048]">SEASONAL</li>
