@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const Footer = () => {
   return (
-    <div className="w-full min-h-[200px] bg-linear-to-t from-[#e0ebf5] to-white px-10 py-10">
+    <div className="w-full min-h-[200px] bg-linear-to-t from-[#e0ebf5] to-white md:px-10 py-10 px-3">
       <div className="flex gap-10 flex-wrap md:flex-nowrap ">
         <section className="flex flex-col gap-5">
           <Image src={"/images/logo.svg"} width={200} height={50} alt="Logo" />
@@ -12,7 +12,7 @@ export const Footer = () => {
             Your premier destination for International fashion. Quality, style
             and affordability in one place
           </p>
-          <div className="flex gap-5 items-center">
+          <div className="flex gap-5 items-center ">
             <div className="p-2 bg-white rounded-lg w-fit text-[#7A2048]">
               <Facebook />
             </div>
@@ -28,7 +28,7 @@ export const Footer = () => {
           </div>
         </section>
         <section className="flex justify-between w-full flex-wrap md:px-10">
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 mb-3">
             <h2 className="font-semibold">Quick Links</h2>
             <ul className="flex flex-col gap-3 text-[#707070] ">
               <Link href={"/about"}>
@@ -46,7 +46,7 @@ export const Footer = () => {
               <li className="hover:text-[#7A2048] cursor-pointer">Returns</li>
             </ul>
           </div>
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 mb-3">
             <h2 className="font-semibold">Customer Service</h2>
             <ul className="flex flex-col gap-3 text-[#707070] ">
               <li className="hover:text-[#7A2048] cursor-pointer">
@@ -66,7 +66,7 @@ export const Footer = () => {
               </li>
             </ul>
           </div>
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5 mb-3">
             <h2 className="font-semibold">Stay Updated</h2>
             <div className="flex flex-col gap-3 text-[#707070] w-[250px]">
               <p>Subscribe to get special offers and updates</p>

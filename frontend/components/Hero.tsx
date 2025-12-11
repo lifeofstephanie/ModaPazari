@@ -30,7 +30,7 @@ export const Hero = () => {
   };
   return (
     <AnimatePresence>
-      <div className="bg-linear-to-b from-[#e0ebf5]  to-white h-[90vh] md:h-screen overflow-hidden   px-5 relative">
+      <div className="bg-linear-to-b from-[#e0ebf5]  to-white h-fit overflow-hidden   px-5 relative">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -116,7 +116,7 @@ export const Hero = () => {
             animate="visible"
             variants={rightElement}
           >
-            <div className=" h-[150px] md:h-[200px] w-[300px] md:w-[400px] bg-black rounded-lg flex justify-center items-center cursor-pointer">
+            <div className=" h-[150px] md:h-[200px] w-[300px] md:w-[400px] bg-black rounded-lg flex justify-center items-center cursor-pointer mb-10 md:mb-0">
               <Play size={30} color="#fff" fill="#fff" />
             </div>
           </motion.div>
