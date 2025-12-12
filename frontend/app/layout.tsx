@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "Moda Pazari",
   description: "E-commerce Website",
   icons: {
-    icon: "/images/logo.svg",
+    icon: "/images/Moda2.png",
   },
 };
 

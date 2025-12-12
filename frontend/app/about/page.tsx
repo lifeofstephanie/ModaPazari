@@ -1,5 +1,6 @@
 "use client";
 import { Testimonials } from "@/data/testimonials";
+import { Values } from "@/data/values";
 import { Compass, Globe, Medal, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -41,10 +42,10 @@ export default function AboutPage() {
   }, []);
   return (
     <div className="">
-      <section className="bg-linear-to-b from-[#e0ebf5] to-white min-h-[500px] w-full px-5 py-[100px]  flex flex-col justify-center">
-        <h1 className="text-6xl font-semibold flex flex-col gap-3 mb-10">
+      <section className="bg-linear-to-b from-[#e0ebf5] to-white min-h-[500px] w-full px-5 py-10 md:py-[100px]  flex flex-col justify-center">
+        <h1 className="text-4xl md:text-6xl font-semibold flex flex-col gap-3 mb-10">
           Empowering The World With{" "}
-          <span className="font-[MomoSignature] text-[#7A2048] text-5xl block">
+          <span className="font-[MomoSignature] text-[#7A2048] text-3xl md:text-5xl block mt-2">
             Personalized Fashion
           </span>
         </h1>
@@ -54,18 +55,18 @@ export default function AboutPage() {
           is to make advanced fashion, ethical sourcing, and effortless style
           accessible, inspiring and impactful for everyone.
         </p>
-        <div className="mt-10 flex md:gap-10">
-          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5">
+        <div className="mt-10 flex gap-3 md:gap-10">
+          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5 text-[10px] md:text-lg">
             <User className="text-[#7A2048]" />
             <p>100k+</p>
             <p>Trusted by users worldwide</p>
           </div>
-          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5">
+          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5 text-[10px]  md:text-lg">
             <Globe className="text-[#7A2048]" />
             <p>150+</p>
             <p>Global Brands and Artisans</p>
           </div>
-          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5">
+          <div className="w-full md:w-[25%] min-h-[100px] rounded-lg backdrop-blur-2xl shadow-md p-5 text-[10px]  md:text-lg">
             <Medal className="text-[#7A2048]" />
             <p>10+</p>
             <p>Years of Expertise</p>
@@ -79,7 +80,7 @@ export default function AboutPage() {
               <Compass size={14} />
               <p className="text-xs">Our Mission</p>
             </div>
-            <h2 className="text-4xl bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
+            <h2 className="text-3xl md:text-4xl bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
               Building Africa&apos;s Most Trusted Fashion Marketplace
             </h2>
             <p>
@@ -106,9 +107,9 @@ export default function AboutPage() {
             </ul>
           </div>
           <img
-            src="/images/shoes.png"
+            src="/images/about1.jpg"
             alt=""
-            className="w-full md:w-[30%] h-[200px] rounded-lg"
+            className="w-full md:w-[30%] rounded-lg bg-contain"
           />
         </div>
         <div className="flex flex-col md:flex-row-reverse gap-20 items-center justify-center mt-10 mb-10">
@@ -117,7 +118,7 @@ export default function AboutPage() {
               <Compass size={14} />
               <p className="text-xs">Our Vision</p>
             </div>
-            <h2 className="text-4xl bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
+            <h2 className="text-3xl md:text-4xl bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
               A Stylized, Seamless Continent
             </h2>
             <p>
@@ -148,17 +149,63 @@ export default function AboutPage() {
             </ul>
           </div>
           <img
-            src="/images/shoes.png"
+            src="/images/about2.jpg"
             alt=""
-            className="w-full md:w-[30%] h-[200px] rounded-lg"
+            className="w-full md:w-[30%] rounded-lg"
           />
         </div>
-        <div className="text-center flex flex-col my-10">
-          <h2 className="text-4xl font-bold">Our Values</h2>
-          <p className="my-2 text-[#707070]">
+        <div className=" flex flex-col my-20">
+          <h2 className="text-4xl font-bold text-center">Our Values</h2>
+          <p className="my-2 text-[#707070] text-center">
             The principles that guide us in the building a better e-commerce
             society.
           </p>
+          <div className="relative">
+            {canScrollLeft && (
+              <button
+                onClick={() => scroll("left")}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black text-white px-3 py-2 rounded-full shadow"
+              >
+                ‹
+              </button>
+            )}
+
+            {canScrollRight && (
+              <button
+                onClick={() => scroll("right")}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-black text-white px-3 py-2 rounded-full shadow"
+              >
+                ›
+              </button>
+            )}
+
+            {/* Scrollable Categories */}
+            <div
+              ref={container}
+              className="flex gap-5 overflow-x-auto no-scrollbar scroll-smooth py-2"
+            >
+              {Values.map((category) => {
+                const Icon = category.icon;
+                return (
+                  <div
+                    key={category.id}
+                    className="min-w-[70%] min-h-[200px] md:min-w-[300px] md:min-h-[230px]  rounded-2xl px-2 md:px-5  shadow-md py-5 md:py-10"
+                  >
+                    <div className="min-w-20 px-5 py-2 h-[30px] bg-white rounded-lg text-xs  ">
+                      <Icon
+                        className="mb-2 text-[#7A2048]"
+                        size={30}
+                        strokeWidth={1.5}
+                      />
+                      <p className="font-bold mb-2">{category.name}</p>
+                      {/* <p className="text-[#707070]">{category.location}</p> */}
+                      <p>{category.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <div className=" flex flex-col my-10">
           <h2 className="text-4xl font-bold text-center">Testimonials</h2>
@@ -192,7 +239,7 @@ export default function AboutPage() {
               {Testimonials.map((category) => (
                 <div
                   key={category.id}
-                  className="min-w-[70%] min-h-[200px] md:min-w-[300px] md:min-h-[230px]  rounded-2xl  px-5  shadow-md py-10"
+                  className="min-w-[70%] min-h-[200px] md:min-w-[300px] md:min-h-[230px]  rounded-2xl  md:px-5 px-0  shadow-md md:py-10 py-2"
                 >
                   <div className="min-w-20 px-5 py-2 h-[30px] bg-white rounded-lg text-xs  ">
                     <p className="font-bold mb-2">{category.name}</p>

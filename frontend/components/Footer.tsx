@@ -36,7 +36,9 @@ export const Footer = () => {
                   About Us
                 </li>
               </Link>
-              <li className="hover:text-[#7A2048] cursor-pointer">Contact</li>
+              <Link href={"/contact"}>
+                <li className="hover:text-[#7A2048] cursor-pointer">Contact</li>
+              </Link>
               <li className="hover:text-[#7A2048] cursor-pointer">
                 Size Guide
               </li>

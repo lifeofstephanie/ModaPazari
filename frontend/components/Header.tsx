@@ -32,7 +32,7 @@ export const Header = () => {
         }  [clip-path:polygon(0%_0%,100%_0%,80%_100%,20%_100%)] flex justify-center items-center`}
       >
         <Link href={"/"}>
-          <Image alt="logo" src="/images/logo.svg" width={200} height={50} />
+          <Image alt="logo" src="/images/Moda2.png" width={200} height={50} />
         </Link>
       </div>
       <ul className="hidden md:flex gap-3 items-center text-sm">
