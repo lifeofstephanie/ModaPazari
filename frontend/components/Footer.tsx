@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const Footer = () => {
   return (
@@ -30,8 +31,14 @@ export const Footer = () => {
           <div className="flex flex-col gap-5 mb-3">
             <h2 className="font-semibold">Quick Links</h2>
             <ul className="flex flex-col gap-3 text-[#707070] ">
-              <li className="hover:text-[#7A2048] cursor-pointer">About Us</li>
-              <li className="hover:text-[#7A2048] cursor-pointer">Contact</li>
+              <Link href={"/about"}>
+                <li className="hover:text-[#7A2048] cursor-pointer">
+                  About Us
+                </li>
+              </Link>
+              <Link href={"/contact"}>
+                <li className="hover:text-[#7A2048] cursor-pointer">Contact</li>
+              </Link>
               <li className="hover:text-[#7A2048] cursor-pointer">
                 Size Guide
               </li>
