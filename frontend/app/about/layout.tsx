@@ -1,3 +1,5 @@
+import { Header } from "@/components/Header";
+
 export default function AboutLayout({
   children,
 }: Readonly<{
@@ -5,6 +7,8 @@ export default function AboutLayout({
 }>) {
   return (
     <html lang="en">
+      <Header />
+
       <body>{children}</body>
     </html>
   );

@@ -1,3 +1,5 @@
+import { Header } from "@/components/Header";
+
 export default function ContactLayout({
   children,
 }: Readonly<{
@@ -5,6 +7,8 @@ export default function ContactLayout({
 }>) {
   return (
     <html lang="en">
+      <Header />
+
       <body>{children}</body>
     </html>
   );

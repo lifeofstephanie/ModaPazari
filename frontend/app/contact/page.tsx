@@ -18,7 +18,7 @@ export default function ContactLayout() {
   };
   return (
     <AnimatePresence>
-      <div className="py-20 px-5 md:px-10 bg-linear-to-b from-[#e0ebf5] to-white">
+      <div className="pb-20 px-5 md:px-10 bg-linear-to-b from-[#e0ebf5] to-white pt-30">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* LEFT SIDE */}
           <div className="flex flex-col gap-6">

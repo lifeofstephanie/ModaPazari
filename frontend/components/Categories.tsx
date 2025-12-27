@@ -170,7 +170,7 @@ export const Categories = () => {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="h-full w-full rounded-t-lg"
+                    className="h-full w-full rounded-t-lg bg-contain bg-center"
                   />
                   {product.tag && (
                     <div className="absolute w-[50px] h-[30px] bg-linear-to-b from-[#e0ebf5] to-white rounded-lg z-10 top-1 left-1 flex justify-center items-center text-[#7A2048] text-sm uppercase font-bold">
