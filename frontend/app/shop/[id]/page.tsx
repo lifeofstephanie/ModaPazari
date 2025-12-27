@@ -27,22 +27,22 @@ export default function ProductDetails() {
 
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || "");
 
-  const incrementQuantity = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setQuantity((q) => q + 1);
-  };
-
-  const decrementQuantity = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setQuantity((q) => (q > 1 ? q - 1 : 1));
-  };
-  // const handleContinueShopping = () => {
-  //   router.push("/shop");
+  // const incrementQuantity = (e: MouseEvent<HTMLButtonElement>) => {
+  //   e.preventDefault();
+  //   setQuantity((q) => q + 1);
   // };
 
-  const handleCheckout = () => {
-    router.push("/cart");
-  };
+  // const decrementQuantity = (e: MouseEvent<HTMLButtonElement>) => {
+  //   e.preventDefault();
+  //   setQuantity((q) => (q > 1 ? q - 1 : 1));
+  // };
+  // // const handleContinueShopping = () => {
+  // //   router.push("/shop");
+  // // };
+
+  // const handleCheckout = () => {
+  //   router.push("/cart");
+  // };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -52,7 +52,16 @@ export default function ProductDetails() {
 
     // Find if item already exists in cart (same product, color, and size)
     const existingItem = currentCart.find(
-      (item) =>
+      (item: {
+        cartId: string;
+        id: number;
+        title: string;
+        price: string;
+        imageUrl: string;
+        quantity: number;
+        color: string;
+        size: string;
+      }) =>
         item.id === product.id &&
         item.color === selectedColor &&
         item.size === selectedSize
@@ -60,10 +69,20 @@ export default function ProductDetails() {
 
     if (existingItem) {
       // Update quantity if already in cart
-      const updatedCart = currentCart.map((item) =>
-        item.cartId === existingItem.cartId
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
+      const updatedCart = currentCart.map(
+        (item: {
+          cartId: string;
+          id: number;
+          title: string;
+          price: string;
+          imageUrl: string;
+          quantity: number;
+          color: string;
+          size: string;
+        }) =>
+          item.cartId === existingItem.cartId
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
       );
       localStorage.setItem("myCart", JSON.stringify(updatedCart));
     } else {
