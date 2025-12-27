@@ -41,7 +41,7 @@ export default function AboutPage() {
     };
   }, []);
   return (
-    <div className="">
+    <div className="pt-20">
       <section className="bg-linear-to-b from-[#e0ebf5] to-white min-h-[500px] w-full px-5 py-10 md:py-[100px]  flex flex-col justify-center">
         <h1 className="text-4xl md:text-6xl font-semibold flex flex-col gap-3 mb-10">
           Empowering The World With{" "}
