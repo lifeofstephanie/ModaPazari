@@ -25,11 +25,11 @@ export default function WinterCollection() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
         {filteredClothes.map((item) => (
           <Link href={`/shop/${item.id}`} key={item.id} className="group">
             <div className="relative">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-[40px] border-[12px] border-[#7A2048]/5">
+              <div className="relative aspect-3/4 overflow-hidden rounded-[40px] border-12 border-[#7A2048]/5">
                 <img
                   src={item.img}
                   alt={item.name}
@@ -58,7 +58,7 @@ export default function WinterCollection() {
                   {item.name}
                 </h3>
                 <p className="text-[#7A2048] font-bold mt-1 tracking-widest text-sm">
-                  {item.price}
+                  {item.currency} {item.price}
                 </p>
               </div>
             </div>

@@ -58,7 +58,7 @@ export default function SummerCollections() {
                   {item.name}
                 </h3>
                 <p className="text-[#7A2048] font-bold mt-1 tracking-widest text-sm">
-                  {item.price}
+                  {item.currency} {item.price}
                 </p>
               </div>
             </div>

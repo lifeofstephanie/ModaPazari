@@ -12,13 +12,15 @@ export interface ClothesItem {
   arEnabled?: boolean;
   model3D?: string;
   overlayImage?: string;
+  currency: string;
 }
 
 export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 1,
     name: "Neural Knit Overshirt",
-    price: "$120",
+    price: "120",
+    currency: "$",
     description:
       "A digital-first garment, crafted from recycled liquid silk. Its seamless construction offers unparalleled comfort and a futuristic silhouette.",
     img: "/images/shirt1.jpg",
@@ -38,7 +40,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 2,
     name: "ISO-Thermal Jacket",
-    price: "$250",
+    price: "250",
+    currency: "$",
     description:
       "Engineered for extreme environments using computational heat-mapping technology. Lightweight yet exceptionally warm.",
     img: "/images/jacket1.jpg",
@@ -58,7 +61,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 3,
     name: "Liquid Silk Blouse",
-    price: "$180",
+    price: "180",
+    currency: "$",
     description:
       "A blend of organic silk and bio-polymers. This piece flows like water and adapts to your body temperature.",
     img: "/images/shirt2.jpg",
@@ -77,7 +81,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 4,
     name: "Knitted Sweater",
-    price: "$150",
+    price: "150",
+    currency: "$",
     description:
       "A digital-first garment, crafted from recycled liquid silk. Its seamless construction offers unparalleled comfort and a futuristic silhouette.",
     img: "/images/shirt1.jpg",
@@ -94,7 +99,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 5,
     name: "Neural Knit Overshirt",
-    price: "$120",
+    price: "120",
+    currency: "$",
     description:
       "A digital-first garment, crafted from recycled liquid silk. Its seamless construction offers unparalleled comfort and a futuristic silhouette.",
     img: "/images/shirt1.jpg",
@@ -111,7 +117,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 6,
     name: "ISO-Thermal Jacket",
-    price: "$250",
+    price: "250",
+    currency: "$",
     description:
       "Engineered for extreme environments using computational heat-mapping technology. Lightweight yet exceptionally warm.",
     img: "/images/jacket1.jpg",
@@ -128,7 +135,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 7,
     name: "Liquid Silk Blouse",
-    price: "$180",
+    price: "180",
+    currency: "$",
     description:
       "A blend of organic silk and bio-polymers. This piece flows like water and adapts to your body temperature.",
     img: "/images/shirt2.jpg",
@@ -145,7 +153,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 8,
     name: "Knitted Sweater",
-    price: "$150",
+    price: "150",
+    currency: "$",
     description:
       "A digital-first garment, crafted from recycled liquid silk. Its seamless construction offers unparalleled comfort and a futuristic silhouette.",
     img: "/images/shirt1.jpg",
@@ -162,7 +171,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 9,
     name: "Tank Top",
-    price: "$20",
+    price: "20",
+    currency: "$",
     description:
       "A minimalist warm-weather staple, knitted with airy fibers for maximum ventilation. Its sleeveless silhouette keeps you cool while maintaining effortless style.",
     img: "/images/tanktop.png",
@@ -181,7 +191,8 @@ export const CLOTHES_DATA: ClothesItem[] = [
   {
     id: 10,
     name: "AeroFlow Linen Shirt",
-    price: "$20",
+    price: "20",
+    currency: "$",
     description:
       "A precision-woven linen garment engineered for maximum airflow. Its lightweight structure delivers cooling comfort with a clean, modern silhouette.",
     img: "/images/Aeroflow_Linen_Shirt.jpg",
