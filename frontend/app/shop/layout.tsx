@@ -8,7 +8,7 @@ export default function ShopLayout({
   return (
     <html lang="en">
       <body>
-        <Header isOverlay={true} />
+        <Header />
 
         {children}
       </body>

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Router } from "next/router";
+import { useRouter } from "next/navigation";
 
 // 1️⃣ Define your validation schema with Zod
 const loginSchema = z.object({
@@ -22,9 +24,11 @@ export default function LoginPage() {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
+  const router = useRouter();
 
   const onSubmit = (data: LoginFormInputs) => {
     console.log("Login data:", data);
+    router.push("/shop");
     // TODO: call your login API
   };
 
