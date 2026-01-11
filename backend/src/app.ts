@@ -35,6 +35,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/notification", notificationRoutes);
+app.get("/ping", (req, res) => res.send("pong"));
 
 // ERROR HANDLING
 app.use(notFound);
