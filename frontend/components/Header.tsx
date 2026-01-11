@@ -42,7 +42,7 @@ export const Header = ({ isOverlay = false }) => {
       >
         {/* Desktop Left Menu */}
         <ul
-          className={`hidden md:flex gap-3 items-center text-sm transition-colors duration-500 ${textColorClass}`}
+          className={`hidden md:flex gap-3 items-center md:text-xs lg:text-sm transition-colors duration-500 ${textColorClass}`}
         >
           <Link href={"/shop"}>
             <li className="cursor-pointer hover:text-[#7A2048]">SHOP</li>
@@ -58,7 +58,7 @@ export const Header = ({ isOverlay = false }) => {
 
         {/* LOGO */}
         <div
-          className={`w-[500px] h-20 flex items-center justify-center transition-all duration-500
+          className={`w-[400px] lg:w-[500px] h-20 flex items-center justify-center transition-all duration-500
           ${
             scrolled
               ? "bg-transparent scale-90"
@@ -81,13 +81,17 @@ export const Header = ({ isOverlay = false }) => {
 
         {/* RIGHT ICONS (DESKTOP) */}
         <ul
-          className={`hidden md:flex gap-3 items-center text-sm transition-colors duration-500 ${textColorClass}`}
+          className={`hidden md:flex gap-3 items-center text-xs lg:text-sm transition-colors duration-500 ${textColorClass}`}
         >
-          <li className="cursor-pointer hover:text-[#7A2048]">SEASONAL</li>
-          <li className="cursor-pointer hover:text-[#7A2048]">ACCESSORIES</li>
+          <Link href="/seasonal">
+            <li className="cursor-pointer hover:text-[#7A2048]">SEASONAL</li>
+          </Link>
+          <Link href="/accessories">
+            <li className="cursor-pointer hover:text-[#7A2048]">ACCESSORIES</li>
+          </Link>
 
           <Link href="/login">
-            <div className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer">
+            <div className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer ">
               SIGN IN / UP
             </div>
           </Link>
@@ -152,8 +156,12 @@ export const Header = ({ isOverlay = false }) => {
             <li className="hover:text-[#7A2048]">CONTACT</li>
           </Link>
           <li className="hover:text-[#7A2048]">HELP CENTER</li>
-          <li className="hover:text-[#7A2048]">SEASONAL</li>
-          <li className="hover:text-[#7A2048]">ACCESSORIES</li>
+          <Link href={"/seasonal"}>
+            <li className="hover:text-[#7A2048]">SEASONAL</li>
+          </Link>
+          <Link href={"/accessories"}>
+            <li className="hover:text-[#7A2048]">ACCESSORIES</li>
+          </Link>
           <Link href="/login" onClick={() => setMenuOpen(false)}>
             <div className="mt-4 p-3 text-center rounded-xl bg-black text-white text-xs">
               SIGN IN / UP
@@ -164,7 +172,7 @@ export const Header = ({ isOverlay = false }) => {
 
       {/* CART DRAWER */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-[80%] md:w-1/3 bg-white shadow-lg
+        className={`fixed top-0 right-0 z-50 h-full w-[80%] md:w-1/3 bg-white shadow-lg overflow-auto  [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
   transition-transform duration-500 ${
     cartOpen ? "translate-x-0" : "translate-x-full"
   }`}
@@ -209,9 +217,8 @@ export const Header = ({ isOverlay = false }) => {
                   className="w-30 h-30 object-cover rounded"
                 />
                 <div className="flex-1">
-                  <p className="text-lg text-[#7a2048]">
-                    {item.title} ({item.quantity})
-                  </p>
+                  <p className="text-lg text-[#7a2048]">{item.title}</p>
+                  <p className="text-sm text-gray-500">{item.quantity}x</p>
                   <p className="text-sm text-gray-500">
                     {item.color} · {item.size}
                   </p>
@@ -253,9 +260,11 @@ export const Header = ({ isOverlay = false }) => {
             </div>
 
             {/* Checkout Button */}
-            <button className="w-full bg-[#7A2048] text-white py-3 rounded-md hover:bg-black transition">
-              Checkout
-            </button>
+            <Link href={"/checkout"}>
+              <button className="w-full bg-[#7A2048] text-white py-3 rounded-md hover:bg-black transition">
+                Checkout
+              </button>
+            </Link>
           </div>
         )}
       </div>
