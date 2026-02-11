@@ -1,17 +1,19 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 
-export default function ContactLayout({
+export default function HelpLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <Header />
+    // <html lang="en">
+    <body>
+      <Header isOverlay={false} />
 
-      <body>{children}</body>
+      {children}
       <Footer />
-    </html>
+    </body>
+    // </html>
   );
 }

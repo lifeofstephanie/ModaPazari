@@ -6,17 +6,19 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Router } from "next/router";
 import { useRouter } from "next/navigation";
+import { loginSchema } from "@/schema/loginSchema";
+import { authService } from "@/services/api";
+import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffect } from "react";
 
 // 1️⃣ Define your validation schema with Zod
-const loginSchema = z.object({
-  email: z.string().email("Invalid email").nonempty("Email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
 
 // 2️⃣ Infer TypeScript type from schema
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { setUser } = useAuthStore();
   const {
     register,
     handleSubmit,
@@ -25,11 +27,27 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
 
-  const onSubmit = (data: LoginFormInputs) => {
+  useEffect(() => {
+    if (user) {
+      router.replace("/shop"); // redirect to shop if already logged in
+    }
+  }, [user, router]);
+
+  const onSubmit = async (data: LoginFormInputs) => {
     console.log("Login data:", data);
-    router.push("/shop");
-    // TODO: call your login API
+    try {
+      const res = await authService.sigIn({
+        email: data.email,
+        password: data.password,
+      });
+      setUser({ token: res.data.token, firstName: res.data.email });
+      toast.success("Logged in successfully");
+      router.push("/shop");
+    } catch (e) {
+      console.error("Login error:", e);
+    }
   };
 
   return (
@@ -94,18 +112,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#7A2048] text-white px-5 py-3 rounded-md mt-5 hover:bg-black transition w-full md:w-[80%]"
+              className="bg-[#7A2048] text-white px-5 py-3 rounded-md mt-5 hover:bg-black transition w-full "
             >
               {isSubmitting ? "Logging in..." : "Login"}
             </button>
+            <p className="text-center mt-2">
+              Do not have an account?{" "}
+              <Link href={"/signup"} className="text-[#7A2048]">
+                Sign Up
+              </Link>
+            </p>
           </form>
-
-          <p className="text-center mt-2">
-            Do not have an account?{" "}
-            <Link href={"/signup"} className="text-[#7A2048]">
-              Sign Up
-            </Link>
-          </p>
         </div>
       </div>
     </div>

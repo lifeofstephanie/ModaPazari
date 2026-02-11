@@ -38,7 +38,6 @@ export default function RootLayout({
 
         {children}
         <Cursor />
-        <Footer />
         <Script
           type="module"
           src="https://unkpg.com/@google/model-viewer/dist/model-viewer.min.js"

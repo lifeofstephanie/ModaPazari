@@ -1,3 +1,4 @@
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 
 export default function SeasonalLayout({
@@ -11,6 +12,7 @@ export default function SeasonalLayout({
         <Header isOverlay={true} />
 
         {children}
+        <Footer />
       </body>
     </html>
   );

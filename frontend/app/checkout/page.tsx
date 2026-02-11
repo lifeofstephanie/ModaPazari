@@ -175,6 +175,7 @@ export default function Checkout() {
                   <img
                     src={item.imageUrl}
                     className="w-30 h-30 object-cover rounded"
+                    loading="lazy"
                   />
                   <div className="flex-1">
                     <p className="text-lg text-[#7a2048]">{item.title}</p>

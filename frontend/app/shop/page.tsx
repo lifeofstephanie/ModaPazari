@@ -5,9 +5,9 @@ export default function Shop() {
   return (
     <main className="">
       <section className="relative w-full overflow-hidden pb-20 px-5 md:px-10 bg-linear-to-b from-[#e0ebf5] to-white pt-30">
-        <div className="h-[50%] md:h-[60%] w-full overflow-hidden flex justify-between items-center bg-[#4f6d7a] px-2 md:px-10 rounded-2xl">
+        <div className="h-[25vh] md:h-[60%] w-full overflow-hidden flex max-md:gap-2 md:justify-between items-center bg-[#4f6d7a] px-2 md:px-10 rounded-2xl">
           <div>
-            <p className="text-white text-lg md:text-3xl lg:text-5xl font-bold font-serif italic mb-4">
+            <p className="text-white text-2xl md:text-3xl lg:text-5xl font-bold font-serif italic mb-4">
               Shop/Fashion for all
             </p>
             <p className="text-sm md:text-2xl font-bold font-serif italic text-[#f1dac4]">

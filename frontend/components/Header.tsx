@@ -5,39 +5,52 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
 
 export const Header = ({ isOverlay = false }) => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false); // track hydration
 
   const { items, loadCart } = useCartStore();
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
 
+  // Hydration fix to prevent flicker
+  useEffect(() => {
+    const timeout = setTimeout(() => setHydrated(true), 0);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Load cart only after hydration
   useEffect(() => {
-    loadCart();
-  }, [loadCart]);
+    if (hydrated && user) loadCart();
+  }, [loadCart, hydrated, user]);
 
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
-
   const textColorClass = isOverlay && !scrolled ? "text-[#fff]" : "text-black";
 
   return (
     <>
       {/* HEADER */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 h-20 w-full px-5 flex items-center justify-between
-        transition-colors duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-50 h-20 w-full px-5 flex items-center justify-between transition-colors duration-500 ${
           scrolled
             ? "bg-white/70 backdrop-blur-md shadow-sm"
             : isOverlay
-            ? "bg-transparent"
-            : "bg-[#e0ebf5]"
+              ? "bg-transparent"
+              : menuOpen
+                ? "#fff"
+                : "bg-[#e0ebf5]"
         }`}
       >
         {/* Desktop Left Menu */}
@@ -53,20 +66,20 @@ export const Header = ({ isOverlay = false }) => {
           <Link href="/contact">
             <li className="cursor-pointer hover:text-[#7A2048]">CONTACT</li>
           </Link>
-          <li className="cursor-pointer hover:text-[#7A2048]">HELP CENTER</li>
+          <Link href={"/helpCenter"}>
+            <li className="cursor-pointer hover:text-[#7A2048]">HELP CENTER</li>
+          </Link>
         </ul>
 
         {/* LOGO */}
         <div
-          className={`w-[400px] lg:w-[500px] h-20 flex items-center justify-center transition-all duration-500
-          ${
+          className={`w-[400px] lg:w-[500px] h-20 flex items-center justify-center transition-all duration-500 ${
             scrolled
               ? "bg-transparent scale-90"
               : isOverlay
-              ? "bg-transparent"
-              : "bg-white"
-          }
-          [clip-path:polygon(0%_0%,100%_0%,80%_100%,20%_100%)]`}
+                ? "bg-transparent"
+                : "bg-white"
+          } [clip-path:polygon(0%_0%,100%_0%,80%_100%,20%_100%)]`}
         >
           <Link href="/">
             <Image
@@ -79,7 +92,7 @@ export const Header = ({ isOverlay = false }) => {
           </Link>
         </div>
 
-        {/* RIGHT ICONS (DESKTOP) */}
+        {/* Desktop Right Icons */}
         <ul
           className={`hidden md:flex gap-3 items-center text-xs lg:text-sm transition-colors duration-500 ${textColorClass}`}
         >
@@ -90,24 +103,36 @@ export const Header = ({ isOverlay = false }) => {
             <li className="cursor-pointer hover:text-[#7A2048]">ACCESSORIES</li>
           </Link>
 
-          <Link href="/login">
-            <div className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer ">
-              SIGN IN / UP
-            </div>
-          </Link>
+          {hydrated &&
+            (!user ? (
+              <Link href="/login">
+                <div className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer">
+                  SIGN IN / UP
+                </div>
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
+                className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer"
+              >
+                LOGOUT
+              </button>
+            ))}
 
           {/* Cart Icon */}
           <div
             onClick={() => setCartOpen(true)}
-            className={`relative h-[30px] w-[30px] rounded-full flex items-center justify-center cursor-pointer border transition-colors
-            ${
+            className={`relative h-[30px] w-[30px] rounded-full flex items-center justify-center cursor-pointer border transition-colors ${
               isOverlay && !scrolled
                 ? "bg-white text-black border-white"
                 : "bg-black text-white border-black"
             }`}
           >
             <Handbag size={18} />
-            {cartCount > 0 && (
+            {user && cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
@@ -122,7 +147,7 @@ export const Header = ({ isOverlay = false }) => {
             className="relative h-[30px] w-[30px] rounded-full flex items-center justify-center cursor-pointer bg-white text-black"
           >
             <Handbag size={18} />
-            {cartCount > 0 && (
+            {user && cartCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
@@ -140,8 +165,7 @@ export const Header = ({ isOverlay = false }) => {
 
       {/* MOBILE MENU */}
       <div
-        className={`fixed top-0 left-0 right-0 z-40 md:hidden bg-white pt-20
-        transition-transform duration-500 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-40 md:hidden bg-white pt-20 transition-transform duration-500 ease-in-out ${
           menuOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
@@ -155,66 +179,57 @@ export const Header = ({ isOverlay = false }) => {
           <Link href="/contact" onClick={() => setMenuOpen(false)}>
             <li className="hover:text-[#7A2048]">CONTACT</li>
           </Link>
-          <li className="hover:text-[#7A2048]">HELP CENTER</li>
+          <Link href={"/helpCenter"}>
+            <li className="hover:text-[#7A2048]">HELP CENTER</li>
+          </Link>
           <Link href={"/seasonal"}>
             <li className="hover:text-[#7A2048]">SEASONAL</li>
           </Link>
           <Link href={"/accessories"}>
             <li className="hover:text-[#7A2048]">ACCESSORIES</li>
           </Link>
-          <Link href="/login" onClick={() => setMenuOpen(false)}>
-            <div className="mt-4 p-3 text-center rounded-xl bg-black text-white text-xs">
-              SIGN IN / UP
-            </div>
-          </Link>
+
+          {hydrated && !user && (
+            <Link href="/login">
+              <div className="p-2 rounded-2xl bg-black text-white text-xs hover:bg-[#7A2048] cursor-pointer">
+                SIGN IN / UP
+              </div>
+            </Link>
+          )}
         </ul>
       </div>
 
       {/* CART DRAWER */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-[80%] md:w-1/3 bg-white shadow-lg overflow-auto  [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]
-  transition-transform duration-500 ${
-    cartOpen ? "translate-x-0" : "translate-x-full"
-  }`}
+        className={`fixed top-0 right-0 z-50 h-full w-[80%] md:w-1/3 bg-white shadow-lg overflow-auto transition-transform duration-500 ${
+          cartOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
-        {/* CART HEADER */}
-        <div className="flex justify-between items-center p-4 ">
-          <div className="flex items-center gap-4">
-            <h2 className="font-[MomoSignature] text-[#7A2048] text-xl md:text-3xl lg:text-4xl">
-              Cart
-            </h2>
-            {/* <button
-              onClick={() => {
-                if (confirm("Are you sure you want to clear the cart?")) {
-                  useCartStore.getState().removeItem(""); // clear all
-                }
-              }}
-              className="text-black hover:text-red-700"
-            >
-              <Trash2 size={20} />
-            </button> */}
-          </div>
-
-          <div className="flex gap-2">
-            {/* Clear Cart Button */}
-
-            {/* Close Cart */}
-            <button onClick={() => setCartOpen(false)}>
-              <X size={24} />
-            </button>
-          </div>
+        <div className="flex justify-between items-center p-4">
+          <h2 className="font-[MomoSignature] text-[#7A2048] text-xl md:text-3xl lg:text-4xl">
+            Cart
+          </h2>
+          <button onClick={() => setCartOpen(false)}>
+            <X size={24} />
+          </button>
         </div>
 
-        {/* CART ITEMS */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4 md:mt-5">
-          {items.length === 0 ? (
-            <p>Your cart is empty</p>
+          {!hydrated || !user ? (
+            <p className="text-center text-gray-500 mt-10">
+              Login to view cart
+            </p>
+          ) : items.length === 0 ? (
+            <p className="text-center text-gray-500 mt-10">
+              Your cart is empty
+            </p>
           ) : (
             items.map((item) => (
-              <div key={item.cartId} className="flex gap-4  pb-4 relative">
+              <div key={item.cartId} className="flex gap-4 pb-4 relative">
                 <img
                   src={item.imageUrl}
                   className="w-30 h-30 object-cover rounded"
+                  loading="lazy"
                 />
                 <div className="flex-1">
                   <p className="text-lg text-[#7a2048]">{item.title}</p>
@@ -226,8 +241,6 @@ export const Header = ({ isOverlay = false }) => {
                     {item.currency} {item.price}
                   </p>
                 </div>
-
-                {/* Delete single item */}
                 <button
                   onClick={() => {
                     useCartStore.getState().removeItem(item.cartId);
@@ -242,10 +255,8 @@ export const Header = ({ isOverlay = false }) => {
           )}
         </div>
 
-        {/* CART FOOTER */}
-        {items.length > 0 && (
-          <div className="p-4 border-t border-[#7A2048] space-y-4 ">
-            {/* Total Price */}
+        {user && items.length > 0 && (
+          <div className="p-4 border-t border-[#7A2048] space-y-4">
             <div className="flex justify-between text-lg font-semibold">
               <span>Total:</span>
               <span>
@@ -259,7 +270,6 @@ export const Header = ({ isOverlay = false }) => {
               </span>
             </div>
 
-            {/* Checkout Button */}
             <Link href={"/checkout"}>
               <button className="w-full bg-[#7A2048] text-white py-3 rounded-md hover:bg-black transition">
                 Checkout

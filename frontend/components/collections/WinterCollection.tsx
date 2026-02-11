@@ -33,7 +33,8 @@ export default function WinterCollection() {
                 <img
                   src={item.img}
                   alt={item.name}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 will-change-transform"
                 />
                 <div className="absolute bottom-6 right-6 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform group-hover:rotate-45">
                   <span className="text-[10px] font-bold tracking-tighter text-center leading-none uppercase">
