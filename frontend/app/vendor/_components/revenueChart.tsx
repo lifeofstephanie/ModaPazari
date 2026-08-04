@@ -8,6 +8,7 @@ import {
   CategoryScale,
   Tooltip,
   Legend,
+  type ChartOptions,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -20,109 +21,78 @@ ChartJS.register(
   Legend
 );
 
+const SERIES = [
+  { label: "Earnings", color: "#7a2048", data: [12, 23, 14, 32, 20, 30, 24, 15, 25, 27, 22, 18] },
+  { label: "Goods Sold", color: "#2f6f6a", data: [8, 20, 8.5, 18, 12, 15, 12, 9, 14, 16, 13, 11] },
+  { label: "Profit", color: "#b07d2b", data: [4, 20, 5.5, 16, 7, 25, 12, 6, 11, 13, 9, 7] },
+];
+
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 export const VendorRevenueChart = () => {
   const data = {
-    labels: [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ],
-    datasets: [
-      {
-        label: "Earnings",
-        data: [
-          12000, 23000, 14000, 32000, 20000, 30000, 24000, 15000, 25000, 27000,
-          22000, 18000,
-        ],
-        borderColor: "#2563EB", // blue
-        backgroundColor: "rgba(37, 99, 235, 0.1)",
-        tension: 0.4,
-        pointRadius: 4,
-      },
-      {
-        label: "Goods Sold",
-        data: [
-          8000, 20000, 8500, 18000, 2000, 15000, 12000, 9000, 14000, 16000,
-          13000, 11000,
-        ],
-        borderColor: "#F59E0B", // amber
-        backgroundColor: "rgba(245, 158, 11, 0.1)",
-        tension: 0.4,
-        pointRadius: 4,
-      },
-      {
-        label: "Profit",
-        data: [
-          4000, 20000, 5500, 16000, 7000, 25000, 12000, 6000, 11000, 13000,
-          9000, 7000,
-        ],
-        borderColor: "#10B981", // green
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
-        tension: 0.4,
-        pointRadius: 4,
-      },
-    ],
+    labels: MONTHS,
+    datasets: SERIES.map((s) => ({
+      label: s.label,
+      data: s.data,
+      borderColor: s.color,
+      backgroundColor: s.color,
+      borderWidth: 2,
+      tension: 0.35,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+    })),
   };
 
-  const options = {
+  const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: {
-        display: false, // we are using a custom header legend
-      },
+      legend: { display: false },
       tooltip: {
-        mode: "index",
-        intersect: false,
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ₦${ctx.parsed.y}k`,
+        },
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        grid: {
-          color: "#E5E7EB",
-        },
+        border: { display: false },
+        grid: { color: "rgba(128,128,128,0.15)" },
+        ticks: { callback: (v) => `₦${v}k` },
       },
       x: {
-        grid: {
-          display: false,
-        },
+        border: { display: false },
+        grid: { display: false },
       },
     },
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm nd:h-[400px]">
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-10 mb-6">
-        <h2 className="text-lg font-semibold text-gray-800">Revenue report</h2>
-
-        <div className="flex items-center gap-8 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-md bg-[#2563EB]" />
-            Earnings
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-md bg-[#F59E0B]" />
-            Goods Sold
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-md bg-[#10B981]" />
-            Profit
-          </div>
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Revenue report</h2>
+          <p className="text-sm text-muted">Monthly performance</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          {SERIES.map((s) => (
+            <div key={s.label} className="flex items-center gap-2 text-muted">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              {s.label}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Chart */}
       <div className="h-80">
         <Line data={data} options={options} />
       </div>

@@ -55,4 +55,12 @@ const productSchema = new Schema<IProduct>(
     {timestamps:true}
 )
 
+// Feed indexes: the compound (createdAt, _id) suffix serves both the DESC sort
+// and the keyset predicate for GET /products/feed. The leading field matches the
+// common filter so each is a single index scan.
+productSchema.index({ status: 1, createdAt: -1, _id: -1 })
+productSchema.index({ category: 1, createdAt: -1, _id: -1 })
+// Vendor catalogue lookups (getVendorProducts / distinct vendor product ids).
+productSchema.index({ vendor: 1 })
+
 export default mongoose.model('Product', productSchema)

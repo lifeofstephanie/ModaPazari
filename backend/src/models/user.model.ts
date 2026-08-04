@@ -9,6 +9,8 @@ export interface IUser extends Document{
     role:'admin'|'vendor'|'buyer';
     storeName:string;
     storeDescription:string;
+    creditLimit:number;
+    availableBalance:number;
     matchPassword(enteredPassword:string):Promise<boolean>
 }
 
@@ -44,6 +46,14 @@ const userSchema = new Schema<IUser>(
         }, 
         storeDescription:{
             type:String
+        },
+        creditLimit:{
+            type:Number,
+            default:0
+        },
+        availableBalance:{
+            type:Number,
+            default:0
         }
     },
     {timestamps:true}

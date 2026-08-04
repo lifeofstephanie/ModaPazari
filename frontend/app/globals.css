@@ -1,50 +1,195 @@
 @import "tailwindcss";
 
+/* Dark mode keys off a .dark class on <html> (set before paint, see layout) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ---- Light theme (editorial minimal) ---- */
+  --background: #ffffff; /* page */
+  --surface: #f7f5f3; /* sections / subtle panels */
+  --surface-2: #efece8; /* deeper panel */
+  --card: #ffffff; /* cards */
+  --foreground: #1a1416; /* near-black warm */
+  --muted: #6f6a6d; /* secondary text */
+  --border: #e8e3df; /* hairlines */
+  --accent: #7a2048; /* burgundy — text/lines */
+  --accent-strong: #631639; /* hover / emphasis */
+  --accent-solid: #7a2048; /* filled buttons (white text) */
+  --accent-soft: #f6e9ef; /* burgundy tint background */
+  --ring: rgba(122, 32, 72, 0.35);
+}
+
+.dark {
+  /* ---- Dark theme ---- */
+  --background: #100d0f;
+  --surface: #171316;
+  --surface-2: #1f1a1e;
+  --card: #191419;
+  --foreground: #f2ecee;
+  --muted: #a49aa0;
+  --border: #2c262b;
+  --accent: #d98cab; /* lighter burgundy for legibility */
+  --accent-strong: #eba9c2;
+  --accent-solid: #8f2a56; /* filled buttons (white text) */
+  --accent-soft: #241820;
+  --ring: rgba(217, 140, 171, 0.35);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-card: var(--card);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-solid: var(--accent-solid);
+  --color-accent-soft: var(--accent-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Poppins";
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
 @font-face {
   font-family: "MomoSignature";
-  src: url("/fonts/MomoSignature-Regular.ttf") format("trueType");
+  src: url("/fonts/MomoSignature-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Rochester";
-  src: url("/fonts/Rochester-Regular.ttf") format("trueType");
+  src: url("/fonts/Rochester-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Poppins";
-  src: url("/fonts/Poppins-Regular.ttf") format("trueType");
+  src: url("/fonts/Poppins-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
+
+/* ---------- Custom cursor ---------- */
 .shadow-cursor {
-  box-shadow: 0 0 8px #7a2048, 0 0 16px #bd2f6f, 0 0 24px #631639;
+  box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent-strong);
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 768px) {
+  html.custom-cursor,
+  html.custom-cursor * {
+    cursor: none;
+  }
+}
+
+/* ---------- 3D / motion utilities ---------- */
+.perspective {
+  perspective: 1400px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Subtle frosted surface — theme aware */
+.glass {
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid var(--border);
+}
+
+/* Soft ground shadow under floating figures */
+.floor-shadow {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--foreground) 30%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin-slow {
+  animation: spin-slow 26s linear infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+/* Thin editorial section divider */
+.hairline {
+  height: 1px;
+  background: var(--border);
+}
+
+/* Utility to hide scrollbars on carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Themed page scrollbar */
+::-webkit-scrollbar {
+  width: 11px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-solid);
+  border-radius: 9999px;
+  border: 3px solid var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floaty,
+  .spin-slow,
+  .fade-up {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
 }

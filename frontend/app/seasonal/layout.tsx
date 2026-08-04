@@ -7,13 +7,10 @@ export default function SeasonalLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <Header isOverlay={true} />
-
-        {children}
-        <Footer />
-      </body>
-    </html>
+    <>
+      <Header isOverlay={true} />
+      {children}
+      <Footer />
+    </>
   );
 }

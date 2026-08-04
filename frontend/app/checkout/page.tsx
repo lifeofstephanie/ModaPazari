@@ -19,10 +19,10 @@ export default function Checkout() {
     .toLocaleString();
   const Shipping = 20;
   return (
-    <main className="h-fit pb-20 px-10 bg-linear-to-b from-[#e0ebf5] to-white pt-40">
-      <div className="flex gap-3 flex-col md:flex-row">
-        <section className="w-full md:w-[49%]">
-          <h2 className="text-2xl md:text-3xl  font-serif tracking-tight mb-5 italic bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
+    <main className="h-fit pb-20 px-5 md:px-10 bg-surface pt-28">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:gap-12">
+        <section className="w-full md:flex-1">
+          <h2 className="text-2xl md:text-3xl font-serif tracking-tight mb-5 italic text-accent font-bold">
             Checkout
           </h2>
           <p className="font-semibold">Shipping Information</p>
@@ -40,11 +40,11 @@ export default function Checkout() {
               <div
                 className="
       flex gap-3 h-[50px] px-5 items-center rounded-2xl
-      border-2 border-[#ccc]
+      border-2 border-border bg-card
       transition-all duration-300
 
-      peer-checked:border-[#7a2408]
-      peer-checked:shadow-[0_0_8px_rgba(122,36,8,0.6),0_0_16px_rgba(122,36,8,0.4)]
+      peer-checked:border-accent
+      peer-checked:shadow-[0_0_0_3px_var(--ring)]
     "
               >
                 <input
@@ -56,7 +56,7 @@ export default function Checkout() {
                   // className="peer hidden"
                 />
                 <TruckIcon color="#666" />
-                <p className="text-[#666] text-sm">Delivery</p>
+                <p className="text-muted text-sm">Delivery</p>
               </div>
             </label>
 
@@ -73,11 +73,11 @@ export default function Checkout() {
               <div
                 className="
       flex gap-3 h-[50px] px-5 items-center rounded-2xl
-      border-2 border-[#ccc]
+      border-2 border-border bg-card
       transition-all duration-300
 
-      peer-checked:border-[#7a2408]
-      peer-checked:shadow-[0_0_8px_rgba(122,36,8,0.6),0_0_16px_rgba(122,36,8,0.4)]
+      peer-checked:border-accent
+      peer-checked:shadow-[0_0_0_3px_var(--ring)]
     "
               >
                 <input
@@ -89,7 +89,7 @@ export default function Checkout() {
                   // className="peer hidden"
                 />
                 <BoxIcon color="#666" />
-                <p className="text-[#666] text-sm">Pickup</p>
+                <p className="text-muted text-sm">Pickup</p>
               </div>
             </label>
           </div>
@@ -97,25 +97,25 @@ export default function Checkout() {
             <label>Full Name</label>
             <input
               type="text"
-              className="w-full rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+              className="w-full rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
               placeholder="Enter Full Name"
             />
             <label>Email address</label>
             <input
               type="email"
-              className="w-full rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+              className="w-full rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
               placeholder="Enter email address"
             />
             <label>Phone number</label>
             <input
               type="phone"
-              className="w-full rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+              className="w-full rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
               placeholder="Enter phone number"
             />
             <label>Country</label>
             <input
               type="text"
-              className="w-full rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+              className="w-full rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
               placeholder="Enter country"
             />
             <div className="flex md:flex-row flex-col md:gap-3 md:items-center ">
@@ -124,7 +124,7 @@ export default function Checkout() {
 
                 <input
                   type="text"
-                  className=" rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+                  className=" rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
                   placeholder="Enter city"
                 />
               </div>
@@ -133,7 +133,7 @@ export default function Checkout() {
 
                 <input
                   type="text"
-                  className=" rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+                  className=" rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
                   placeholder="Enter state"
                 />
               </div>
@@ -142,7 +142,7 @@ export default function Checkout() {
 
                 <input
                   type="text"
-                  className=" rounded-md border-[#ccc] border px-5 text-sm mt-2 mb-5 h-12.5"
+                  className=" rounded-md border-border border bg-card px-5 text-sm mt-2 mb-5 h-12.5 outline-none focus:border-accent"
                   placeholder="Enter zip code"
                 />
               </div>
@@ -164,7 +164,7 @@ export default function Checkout() {
             </p>
           </div>
         </section>
-        <section className="w-full md:w-[49%] mt-10 md:mt-0 md:px-10">
+        <section className="h-fit w-full rounded-2xl border border-border bg-card p-6 md:sticky md:top-28 md:w-[380px] md:shrink-0">
           <p className="font-semibold">Review your cart</p>
           <div className="flex-1 p-4 overflow-y-auto space-y-4 md:mt-5">
             {items.length === 0 ? (
@@ -178,12 +178,12 @@ export default function Checkout() {
                     loading="lazy"
                   />
                   <div className="flex-1">
-                    <p className="text-lg text-[#7a2048]">{item.title}</p>
-                    <p className="text-sm text-gray-500">{item.quantity}x</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-lg text-accent">{item.title}</p>
+                    <p className="text-sm text-muted">{item.quantity}x</p>
+                    <p className="text-sm text-muted">
                       {item.color} · {item.size}
                     </p>
-                    <p className="text-[#7a2048]">
+                    <p className="text-accent">
                       {item.currency} {item.price}
                     </p>
                   </div>
@@ -195,21 +195,21 @@ export default function Checkout() {
           </div>
           {/* Price */}
           <div className="flex flex-col gap-4">
-            <div className="flex justify-between text-sm text-[#666] font-semibold">
+            <div className="flex justify-between text-sm text-muted font-semibold">
               <span>Sub Total:</span>
               <span>${subTotal}</span>
             </div>
-            <div className="flex justify-between text-sm text-[#666] font-semibold">
+            <div className="flex justify-between text-sm text-muted font-semibold">
               <span>Shipping:</span>
               <span>${Shipping}</span>
             </div>
-            <div className="flex justify-between text-sm text-[#666] font-semibold">
+            <div className="flex justify-between text-sm text-muted font-semibold">
               <span>Total:</span>
               <span>${Number(subTotal) + Number(Shipping)}</span>
             </div>
           </div>
           <div
-            className={`h-12.5 w-full bg-[#7a2408] my-8 rounded-md text-white hover:bg-black justify-center items-center flex ${
+            className={`h-12.5 w-full bg-accent-solid my-8 rounded-md text-white hover:bg-accent-strong transition-colors justify-center items-center flex ${
               terms === false
                 ? "opacity-50 cursor-not-allowed"
                 : "cursor-pointer opacity-100"
@@ -219,10 +219,10 @@ export default function Checkout() {
             <p>Pay Now</p>
           </div>
           <div className="flex gap-2">
-            <LockIcon color="#7a2408" />
+            <LockIcon className="text-accent" />
             <p className="font-bold ">Secure Checkout - SSL Encrypted</p>
           </div>
-          <p className="text-[#666] mt-5">
+          <p className="text-muted mt-5">
             {" "}
             Ensuring your financial and personal details are secured during
             every transaction

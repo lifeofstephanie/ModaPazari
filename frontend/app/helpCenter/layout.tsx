@@ -7,13 +7,10 @@ export default function HelpLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // <html lang="en">
-    <body>
-      <Header isOverlay={false} />
-
+    <>
+      <Header />
       {children}
       <Footer />
-    </body>
-    // </html>
+    </>
   );
 }

@@ -8,7 +8,7 @@ export default function VendorLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className=" flex flex-col pt-20 bg-[#e0ebf5] min-h-screen">
+    <div className="flex min-h-screen flex-col bg-surface pt-[calc(4rem+env(safe-area-inset-top,0px))]">
       {/* Top Navbar */}
       <Navbar />
 
@@ -18,7 +18,7 @@ export default function VendorLayout({
         <Sidebar />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto md:pl-64 ">
+        <main className="flex-1 overflow-auto md:pl-64">
           {children}
           <Footer />
         </main>

@@ -14,7 +14,7 @@ export const deleteUsers = async(req:Request, res:Response)=>{
 }
 
 export const getAllOrders = async(req:Request, res:Response)=>{
-  const orders = await Order.find({}).populate("user products.product")
+  const orders = await Order.find({}).populate("buyer orderItems.product")
   res.json(orders)
 }
 

@@ -30,9 +30,11 @@ export default function Shop() {
           </p>
         </div>
       </section>
-      <section className="bg-linear-to-b from-[#e0ebf5] to-white py-20 px-6 md:px-12">
-        <WinterCollection />
-        <SummerCollections />
+      <section className="bg-background py-20 px-5 md:px-10">
+        <div className="mx-auto max-w-7xl">
+          <WinterCollection />
+          <SummerCollections />
+        </div>
       </section>
     </main>
   );

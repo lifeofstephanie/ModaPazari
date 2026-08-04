@@ -12,58 +12,69 @@ import {
   Settings,
   Clock,
   CheckCircle,
-  HelpCircleIcon,
-  ChevronLeft,
+  HelpCircle,
+  X,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+type SubItem = { name: string; path: string; icon: LucideIcon };
+type MenuItem = {
+  name: string;
+  icon: LucideIcon;
+  path?: string;
+  subItems?: SubItem[];
+};
+
+const menuItems: MenuItem[] = [
+  { name: "Dashboard", path: "/vendor", icon: Home },
+  {
+    name: "Orders",
+    icon: ShoppingCart,
+    subItems: [
+      { name: "Pending", path: "/vendor/orders/pending", icon: Clock },
+      { name: "Completed", path: "/vendor/orders/completed", icon: CheckCircle },
+    ],
+  },
+  { name: "Products", path: "/vendor/products", icon: Package },
+  { name: "Analytics", path: "/vendor/analytics", icon: BarChart },
+  { name: "Settings", path: "/vendor/settings", icon: Settings },
+  { name: "Help Center", path: "/vendor/helpCenter", icon: HelpCircle },
+];
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true); // desktop expand/collapse
-  const [mobileOpen, setMobileOpen] = useState(false); // mobile sidebar
-  const [ordersOpen, setOrdersOpen] = useState(false); // accordion for orders
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(
+    pathname.startsWith("/vendor/orders")
+  );
 
-  const menuItems = [
-    { name: "Dashboard", path: "/vendor/", icon: <Home size={20} /> },
-    {
-      name: "Orders",
-      icon: <ShoppingCart size={20} />,
-      subItems: [
-        { name: "Pending", path: "/vendor/orders/pending" },
-        { name: "Completed", path: "/vendor/orders/completed" },
-      ],
-    },
-    { name: "Products", path: "/vendor/products", icon: <Package size={20} /> },
-    {
-      name: "Analytics",
-      path: "/vendor/analytics",
-      icon: <BarChart size={20} />,
-    },
-    {
-      name: "Settings",
-      path: "/vendor/settings",
-      icon: <Settings size={20} />,
-    },
-    {
-      name: "Help Center",
-      path: "/vendor/helpCenter",
-      icon: <HelpCircleIcon size={20} />,
-    },
-  ];
+  const isActive = (path: string) =>
+    path === "/vendor" ? pathname === "/vendor" : pathname.startsWith(path);
+
+  const linkClass = (active: boolean) =>
+    `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+      active
+        ? "bg-accent-soft font-medium text-accent"
+        : "text-muted hover:bg-surface hover:text-foreground"
+    }`;
 
   return (
     <>
-      {/* Mobile toggle button */}
+      {/* Mobile toggle */}
       <button
-        className="md:hidden fixed top-8 left-4 z-50 bg-white p-2 rounded-md shadow-md"
-        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle menu"
+        className="fixed left-4 top-[calc(0.875rem+env(safe-area-inset-top,0px))] z-[60] rounded-md border border-border bg-card p-2 md:hidden"
+        onClick={() => setMobileOpen((v) => !v)}
       >
-        <Menu size={18} />
+        {mobileOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/70 z-40 md:hidden "
+          className="fixed inset-0 z-40 bg-foreground/40 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -71,92 +82,80 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          bg-linear-to-b from-[#e0ebf6] to-white shadow-lg p-5 shrink-0
-          md:h-screen  md:fixed
-          transition-all duration-300
-          ${isOpen ? "w-64" : "w-23"}
-          ${mobileOpen ? "fixed top-0 left-0 h-screen z-50 w-64" : "hidden md:block"}
+          fixed top-[calc(4rem+env(safe-area-inset-top,0px))] z-50 w-64 shrink-0 overflow-y-auto
+          h-[calc(100vh-4rem-env(safe-area-inset-top,0px))]
+          border-r border-border bg-card p-4
+          transition-transform duration-300
+          ${mobileOpen ? "left-0 translate-x-0" : "-translate-x-full md:translate-x-0"}
+          md:left-0 md:block
         `}
       >
-        {/* Collapse button (desktop only) */}
-        <div className="flex justify-end mb-6 mt-5">
-          <button
-            className="hidden md:block p-1 rounded-full bg-[#7A2048] text-white"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <ChevronLeft /> : <ChevronRight />}
-          </button>
-        </div>
+        <p className="px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+          Menu
+        </p>
 
-        <ul className="flex flex-col gap-2 overflow-y-auto max-h-[calc(h-screen-100px)]">
-          {menuItems.map((item, idx) => (
-            <li key={idx}>
-              {item.subItems ? (
-                <div>
-                  <div
-                    onClick={() => setOrdersOpen(!ordersOpen)}
-                    className="flex justify-between items-center cursor-pointer p-2 hover:bg-[#ccc]/20 rounded"
-                  >
-                    {/* Icon always visible */}
-                    <div className="flex items-center gap-2">
-                      {item.icon}
-                      <span className={isOpen ? "block" : "hidden"}>
+        <nav>
+          <ul className="flex flex-col gap-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+
+              if (item.subItems) {
+                const groupActive = pathname.startsWith("/vendor/orders");
+                return (
+                  <li key={item.name}>
+                    <button
+                      onClick={() => setOrdersOpen((v) => !v)}
+                      className={`w-full justify-between ${linkClass(groupActive && !ordersOpen)}`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon size={18} />
                         {item.name}
                       </span>
-                    </div>
-                    <span>
-                      {ordersOpen ? <ChevronDown /> : <ChevronRight />}
-                    </span>
-                  </div>
-
-                  {ordersOpen && (
-                    <ul
-                      className={`${!isOpen ? "pl-2" : "pl-5"} flex flex-col gap-1`}
-                    >
-                      {ordersOpen && (
-                        <ul className="pl-0 flex flex-col gap-1">
-                          {item.subItems.map((sub, i) => {
-                            let icon;
-                            if (sub.name === "Pending")
-                              icon = <Clock size={16} />;
-                            if (sub.name === "Completed")
-                              icon = <CheckCircle size={16} />;
-
-                            return (
-                              <li key={i}>
-                                <Link
-                                  href={sub.path}
-                                  className="flex items-center gap-2 p-2 hover:bg-[#ccc]/20 rounded"
-                                  onClick={() => setMobileOpen(false)}
-                                >
-                                  {icon}
-                                  <span className={isOpen ? "block" : "hidden"}>
-                                    {sub.name}
-                                  </span>
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                      {ordersOpen ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
                       )}
-                    </ul>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href={item.path}
-                  className="flex items-center gap-2 p-2 hover:bg-[#ccc]/20 rounded cursor-pointer"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.icon}
-                  <span className={isOpen ? "block" : "hidden"}>
+                    </button>
+
+                    {ordersOpen && (
+                      <ul className="mt-1 flex flex-col gap-1 pl-4">
+                        {item.subItems.map((sub) => {
+                          const SubIcon = sub.icon;
+                          return (
+                            <li key={sub.name}>
+                              <Link
+                                href={sub.path}
+                                onClick={() => setMobileOpen(false)}
+                                className={linkClass(isActive(sub.path))}
+                              >
+                                <SubIcon size={16} />
+                                {sub.name}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
+
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.path!}
+                    onClick={() => setMobileOpen(false)}
+                    className={linkClass(isActive(item.path!))}
+                  >
+                    <Icon size={18} />
                     {item.name}
-                  </span>
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </aside>
     </>
   );

@@ -3,11 +3,16 @@ import User from "../models/user.model";
 import generateToken from "../utils/generateToken";
 import { AuthRequest } from "../middleware/auth";
 
+// Roles a client is allowed to self-assign at registration. "admin" is
+// deliberately excluded — it can only be granted through a privileged flow,
+// otherwise anyone could POST { role: "admin" } and become an admin.
+const SELF_ASSIGNABLE_ROLES = ["buyer", "vendor"];
+
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    console.log("Register request body:", req.body);
-
     const { firstName, lastName, email, password, role } = req.body;
+
+    const safeRole = SELF_ASSIGNABLE_ROLES.includes(role) ? role : "buyer";
 
     const userExists = await User.findOne({ email });
     if (userExists)
@@ -18,7 +23,7 @@ export const registerUser = async (req: Request, res: Response) => {
       lastName,
       email,
       password,
-      role,
+      role: safeRole,
     });
 
     res.status(201).json({
@@ -30,7 +35,7 @@ export const registerUser = async (req: Request, res: Response) => {
       token: generateToken(String(user._id)),
     });
   } catch (error: any) {
-    console.error("Register error:", error.message, error.stack);
+    console.error("Register error:", error.message);
     res.status(500).json({ message: error.message || "Server error" });
   }
 };

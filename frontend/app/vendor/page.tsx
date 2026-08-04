@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { BestSellingProductTable } from "./_components/bestSellingProducts";
 import { RecentActivity } from "./_components/recent";
 import { VendorRevenueChart } from "./_components/revenueChart";
@@ -7,42 +8,68 @@ import { Values } from "./_data/dashboardValues";
 
 export default function Vendor() {
   return (
-    <div className="bg-linear-to-b from-[#e0ebf5] to-white overflow-x-hidden min-h-screen">
-      {/* Summary Cards */}
-      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 px-5 sm:px-10 py-10">
-        {Values.map((item, id) => (
-          <div
-            key={id}
-            className="p-5 rounded-2xl gap-4 bg-white shadow-md w-full flex flex-col justify-between"
-          >
-            <div className="flex justify-between items-center flex-wrap">
-              <div>
-                <p className="font-bold text-xl mb-2">{item.value}</p>
-                <p className="text-[#666]">{item.name}</p>
-              </div>
-              <div>
-                <item.icon size={30} color="#7a2048" />
-              </div>
-            </div>
-            <div className="w-fit bg-green-300 py-1 px-3 mt-5 rounded-sm">
-              <p className="text-[#7a2048] font-bold text-xs">{item.gain}</p>
-            </div>
-          </div>
-        ))}
+    <div className="min-h-screen px-5 py-8 sm:px-8">
+      {/* Page header */}
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          Overview
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted">
+          Your store at a glance for the last 30 days.
+        </p>
       </div>
 
-      {/* Revenue Chart + Recent Activity */}
-      <div className="flex flex-col md:flex-row gap-5 px-5 sm:px-10 mb-10">
-        <div className="w-full md:w-2/3">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Values.map((item) => {
+          const Icon = item.icon;
+          const up = item.trend === "up";
+          const down = item.trend === "down";
+          return (
+            <div
+              key={item.name}
+              className="rounded-xl border border-border bg-card p-5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="grid h-9 w-9 place-items-center rounded-md bg-accent-soft text-accent">
+                  <Icon size={18} />
+                </span>
+                <span
+                  className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                    up
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : down
+                        ? "text-red-500"
+                        : "text-muted"
+                  }`}
+                >
+                  {up && <ArrowUpRight size={14} />}
+                  {down && <ArrowDownRight size={14} />}
+                  {item.delta}
+                </span>
+              </div>
+              <p className="mt-4 text-2xl font-semibold tracking-tight">
+                {item.value}
+              </p>
+              <p className="mt-1 text-sm text-muted">{item.name}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Revenue + Recent activity */}
+      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
+        <div className="w-full lg:w-2/3">
           <VendorRevenueChart />
         </div>
-        <div className="w-full md:w-1/3">
+        <div className="w-full lg:w-1/3">
           <RecentActivity />
         </div>
       </div>
 
-      {/* Best Selling Products Table */}
-      <div className="px-5 sm:px-10 mb-20 overflow-x-auto">
+      {/* Best selling products */}
+      <div className="mt-6">
         <BestSellingProductTable />
       </div>
     </div>

@@ -19,19 +19,18 @@ export default function HelpCenter() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#e0ebf5] to-white pt-30 px-5">
+    <div className="min-h-screen bg-surface pt-28 pb-16">
+      <div className="mx-auto max-w-6xl px-5">
       <div className="mt-5 flex flex-col items-center gap-5">
-        <h3 className="text-4xl bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold">
-          Help Center
-        </h3>
+        <h3 className="text-4xl text-accent font-bold">Help Center</h3>
 
-        <p className="text-sm max-md:text-xs text-[#7A2048] max-md:text-center">
+        <p className="text-sm max-md:text-xs text-accent max-md:text-center">
           Got a question about using Moda Pazari to shop or sell? We&apos;ve got
           you covered
         </p>
 
         <input
-          className="w-[80%] max-md:w-[90%] h-15 border border-[#ccc] rounded-md p-5 text-sm md:mt-5"
+          className="w-[80%] max-md:w-[90%] h-15 border border-border bg-card rounded-md p-5 text-sm outline-none focus:border-accent md:mt-5"
           placeholder="Enter your questions"
         />
       </div>
@@ -45,14 +44,14 @@ export default function HelpCenter() {
           {DefaultTopics.map((topic, index) => (
             <div
               key={index}
-              className="py-5 px-8 bg-white shadow-md rounded-xl h-[300px] mb-2 flex flex-col gap-5"
+              className="py-5 px-8 bg-card border border-border shadow-md rounded-xl h-[300px] mb-2 flex flex-col gap-5"
             >
-              <div className="p-1 rounded-full border-2 w-fit relative">
-                <div className="w-full h-full bg-[#7A2048]/40 rounded-full absolute top-2.5"></div>
+              <div className="p-1 rounded-full border-2 border-border w-fit relative">
+                <div className="w-full h-full bg-accent/40 rounded-full absolute top-2.5"></div>
                 <ArrowRight size={30} />
               </div>
 
-              <p className="text-xl text-[#7A2048] font-extrabold">
+              <p className="text-xl text-accent font-extrabold">
                 {topic.name}
               </p>
 
@@ -88,7 +87,7 @@ export default function HelpCenter() {
           </h3>
         </div>
 
-        <div className="w-full md:w-[40%] grid grid-cols-3 border rounded-md text-center h-12 items-center my-5 overflow-hidden px-2 py-1">
+        <div className="w-full md:w-[40%] grid grid-cols-3 border border-border rounded-md text-center h-12 items-center my-5 overflow-hidden px-2 py-1">
           {filters.map((filter) => (
             <div
               key={filter}
@@ -98,8 +97,8 @@ export default function HelpCenter() {
               }}
               className={`flex items-center justify-center cursor-pointer transition-all h-full duration-200 rounded-md ${
                 activeFilter === filter
-                  ? "bg-[#7A2048] text-white"
-                  : "hover:bg-gray-100"
+                  ? "bg-accent-solid text-white"
+                  : "hover:bg-surface-2"
               }`}
             >
               {filter}
@@ -114,7 +113,7 @@ export default function HelpCenter() {
             return (
               <div
                 key={index}
-                className="border rounded-md overflow-hidden transition-all duration-300 mb-5"
+                className="border border-border rounded-md overflow-hidden transition-all duration-300 mb-5"
               >
                 <div
                   onClick={() => toggleAccordion(index)}
@@ -123,9 +122,9 @@ export default function HelpCenter() {
                   <p className="font-medium">{item.question}</p>
 
                   {isOpen ? (
-                    <Minus size={18} className="text-[#7A2048]" />
+                    <Minus size={18} className="text-accent" />
                   ) : (
-                    <Plus size={18} className="text-[#7A2048]" />
+                    <Plus size={18} className="text-accent" />
                   )}
                 </div>
 
@@ -134,12 +133,13 @@ export default function HelpCenter() {
                     isOpen ? "max-h-40 opacity-100 pb-4" : "max-h-0 opacity-0"
                   } overflow-hidden`}
                 >
-                  <p className="text-sm text-gray-600">{item.answer}</p>
+                  <p className="text-sm text-muted">{item.answer}</p>
                 </div>
               </div>
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

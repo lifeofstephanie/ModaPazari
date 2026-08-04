@@ -7,11 +7,10 @@ export default function AboutLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <body>
+    <>
       <Header />
-
-      <body>{children}</body>
+      {children}
       <Footer />
-    </body>
+    </>
   );
 }

@@ -7,11 +7,10 @@ export default function ContactLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <>
       <Header />
-
-      <body>{children}</body>
+      {children}
       <Footer />
-    </html>
+    </>
   );
 }
