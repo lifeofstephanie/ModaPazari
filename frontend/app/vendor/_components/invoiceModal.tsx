@@ -30,15 +30,23 @@ const buildLineItems = (order: VendorOrder) => {
   });
 };
 
+export type InvoiceLineItem = { name: string; qty: number; amount: number };
+
 type InvoiceModalProps = {
   order: VendorOrder | null;
+  // Real line items when available; otherwise a plausible split is synthesised.
+  lineItems?: InvoiceLineItem[];
   onClose: () => void;
 };
 
-export const InvoiceModal = ({ order, onClose }: InvoiceModalProps) => {
+export const InvoiceModal = ({
+  order,
+  lineItems: provided,
+  onClose,
+}: InvoiceModalProps) => {
   if (!order) return null;
 
-  const lineItems = buildLineItems(order);
+  const lineItems = provided && provided.length ? provided : buildLineItems(order);
   const subtotal = lineItems.reduce((s, l) => s + l.amount, 0);
 
   return (

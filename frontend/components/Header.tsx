@@ -43,8 +43,8 @@ export const Header = ({ isOverlay = false }) => {
   }, []);
 
   useEffect(() => {
-    if (hydrated && user) loadCart();
-  }, [loadCart, hydrated, user]);
+    if (hydrated) loadCart();
+  }, [loadCart, hydrated]);
 
   const cartCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
@@ -131,7 +131,7 @@ export const Header = ({ isOverlay = false }) => {
             className="relative grid h-9 w-9 place-items-center rounded-full border border-border text-foreground transition-colors hover:border-accent hover:text-accent"
           >
             <Handbag size={17} />
-            {user && cartCount > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-accent-solid text-[10px] text-white">
                 {cartCount}
               </span>
@@ -152,7 +152,7 @@ export const Header = ({ isOverlay = false }) => {
             }`}
           >
             <Handbag size={17} />
-            {user && cartCount > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-accent-solid text-[10px] text-white">
                 {cartCount}
               </span>
@@ -213,9 +213,7 @@ export const Header = ({ isOverlay = false }) => {
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {!hydrated || !user ? (
-            <p className="mt-10 text-center text-muted">Login to view cart</p>
-          ) : items.length === 0 ? (
+          {!hydrated ? null : items.length === 0 ? (
             <p className="mt-10 text-center text-muted">Your cart is empty</p>
           ) : (
             items.map((item) => (
@@ -228,11 +226,13 @@ export const Header = ({ isOverlay = false }) => {
                 <div className="flex-1">
                   <p className="text-accent">{item.title}</p>
                   <p className="text-sm text-muted">{item.quantity}x</p>
-                  <p className="text-sm text-muted">
-                    {item.color} · {item.size}
-                  </p>
+                  {(item.color || item.size) && (
+                    <p className="text-sm text-muted">
+                      {[item.color, item.size].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
                   <p className="text-accent">
-                    {item.currency} {item.price}
+                    ₦{Number(item.price).toLocaleString()}
                   </p>
                 </div>
                 <button
@@ -250,23 +250,26 @@ export const Header = ({ isOverlay = false }) => {
           )}
         </div>
 
-        {user && items.length > 0 && (
+        {items.length > 0 && (
           <div className="space-y-4 border-t border-border p-4">
             <div className="flex justify-between text-lg font-semibold">
               <span>Total:</span>
               <span>
-                $
+                ₦
                 {items
-                  .reduce((sum, item) => {
-                    const priceNum = Number(item.price.replace(/[^0-9.]/g, ""));
-                    return sum + priceNum * item.quantity;
-                  }, 0)
+                  .reduce(
+                    (sum, item) => sum + Number(item.price) * item.quantity,
+                    0
+                  )
                   .toLocaleString()}
               </span>
             </div>
-            <Link href="/checkout" onClick={() => setCartOpen(false)}>
+            <Link
+              href={user ? "/checkout" : "/login"}
+              onClick={() => setCartOpen(false)}
+            >
               <button className="w-full rounded-lg bg-accent-solid py-3 text-white transition-colors hover:bg-accent-strong">
-                Checkout
+                {user ? "Checkout" : "Sign in to checkout"}
               </button>
             </Link>
           </div>

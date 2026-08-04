@@ -1,7 +1,45 @@
-import { CLOTHES_DATA } from "@/data/constants";
+"use client";
+
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { productService, type ApiProduct } from "@/services/api";
+
+const FALLBACK_IMG = "/images/image.png";
+const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
 export default function Shop() {
+  const [items, setItems] = useState<ApiProduct[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async (nextCursor?: string) => {
+    try {
+      nextCursor ? setLoadingMore(true) : setLoading(true);
+      const { data } = await productService.getFeed({
+        limit: 12,
+        cursor: nextCursor,
+      });
+      setItems((prev) =>
+        nextCursor ? [...prev, ...data.items] : data.items
+      );
+      setCursor(data.nextCursor);
+      setHasMore(data.hasMore);
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
   return (
     <main className="bg-background pt-28 pb-20">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
@@ -32,43 +70,114 @@ export default function Shop() {
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
             All products
           </h2>
-          <span className="text-sm text-muted">{CLOTHES_DATA.length} items</span>
+          {!loading && !error && (
+            <span className="text-sm text-muted">{items.length} items</span>
+          )}
         </div>
 
-        {/* Product grid */}
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
-          {CLOTHES_DATA.map((item) => (
-            <Link href={`/shop/${item.id}`} key={item.id} className="group">
-              <div className="relative aspect-3/4 overflow-hidden rounded-3xl border border-border bg-surface">
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute bottom-4 right-4 grid h-14 w-14 place-items-center rounded-full bg-card shadow-lg transition-transform group-hover:rotate-45">
-                  <span className="text-center text-[10px] font-bold uppercase leading-none tracking-tighter">
-                    Moda <br /> Pazari
-                  </span>
-                  <div className="absolute -top-1 -right-1 rounded-full bg-accent-solid p-1 text-white">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="M7 17L17 7M17 7H7M17 7V17" />
-                    </svg>
+        {/* States */}
+        {loading ? (
+          <ProductGridSkeleton />
+        ) : error ? (
+          <EmptyState
+            title="Couldn't load products"
+            sub="Please check your connection and try again."
+            action={
+              <button
+                onClick={() => load()}
+                className="rounded-full bg-accent-solid px-5 py-2 text-sm text-white transition-colors hover:bg-accent-strong"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : items.length === 0 ? (
+          <EmptyState
+            title="No products yet"
+            sub="Check back soon — new pieces are on the way."
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
+              {items.map((item) => (
+                <Link href={`/shop/${item._id}`} key={item._id} className="group">
+                  <div className="relative aspect-3/4 overflow-hidden rounded-3xl border border-border bg-surface">
+                    <img
+                      src={item.images?.[0] || FALLBACK_IMG}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    {item.stock === 0 && (
+                      <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white">
+                        Sold out
+                      </span>
+                    )}
+                    <div className="absolute bottom-4 right-4 grid h-14 w-14 place-items-center rounded-full bg-card shadow-lg transition-transform group-hover:rotate-45">
+                      <span className="text-center text-[10px] font-bold uppercase leading-none tracking-tighter">
+                        Moda <br /> Pazari
+                      </span>
+                      <div className="absolute -top-1 -right-1 rounded-full bg-accent-solid p-1 text-white">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M7 17L17 7M17 7H7M17 7V17" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  <div className="mt-4 text-center">
+                    <h3 className="font-serif text-lg italic text-accent">
+                      {item.name}
+                    </h3>
+                    <p className="mt-1 text-sm font-bold tracking-widest text-accent">
+                      {naira(item.price)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="mt-12 flex justify-center">
+                <button
+                  onClick={() => cursor && load(cursor)}
+                  disabled={loadingMore}
+                  className="rounded-full border border-accent px-8 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
               </div>
-              <div className="mt-4 text-center">
-                <h3 className="font-serif text-lg italic text-accent">
-                  {item.name}
-                </h3>
-                <p className="mt-1 text-sm font-bold tracking-widest text-accent">
-                  {item.currency} {item.price}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+            )}
+          </>
+        )}
       </div>
     </main>
   );
 }
+
+const ProductGridSkeleton = () => (
+  <div className="grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
+    {Array.from({ length: 8 }).map((_, i) => (
+      <div key={i} className="animate-pulse">
+        <div className="aspect-3/4 rounded-3xl bg-surface-2" />
+        <div className="mx-auto mt-4 h-4 w-2/3 rounded bg-surface-2" />
+        <div className="mx-auto mt-2 h-3 w-1/3 rounded bg-surface-2" />
+      </div>
+    ))}
+  </div>
+);
+
+const EmptyState = ({
+  title,
+  sub,
+  action,
+}: {
+  title: string;
+  sub: string;
+  action?: React.ReactNode;
+}) => (
+  <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border py-24 text-center">
+    <p className="text-lg font-semibold">{title}</p>
+    <p className="max-w-sm text-sm text-muted">{sub}</p>
+    {action}
+  </div>
+);

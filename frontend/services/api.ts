@@ -61,9 +61,70 @@ export type CreateProductRequest = {
 
 export const vendorService = {
   createProduct: (request: CreateProductRequest) =>
-    AXIOS.post("api/vendor/products", request),
-  getProducts: () => AXIOS.get("api/vendor/products"),
-  getOrders: () => AXIOS.get("api/vendor/orders"),
+    AXIOS.post<ApiProduct>("api/vendor/products", request),
+  updateProduct: (id: string, request: CreateProductRequest) =>
+    AXIOS.put<ApiProduct>(`api/vendor/products/${id}`, request),
+  deleteProduct: (id: string) => AXIOS.delete(`api/vendor/products/${id}`),
+  getProducts: () => AXIOS.get<ApiProduct[]>("api/vendor/products"),
+  getOrders: () => AXIOS.get<ApiOrder[]>("api/vendor/orders"),
+};
+
+export type ApiOrderStatus =
+  | "pending"
+  | "paid"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export interface ApiOrder {
+  _id: string;
+  buyer?: { firstName?: string; lastName?: string; email?: string } | string | null;
+  orderItems: {
+    product: ApiRef;
+    name?: string;
+    quantity: number;
+    price: number;
+  }[];
+  totalPrice: number;
+  status: ApiOrderStatus;
+  shippingAddress?: { fullName?: string };
+  createdAt?: string;
+}
+
+export type ApiRef = { _id: string; name?: string } | string | null;
+
+export interface ApiProduct {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  images?: string[];
+  stock: number;
+  category?: ApiRef;
+  brand?: ApiRef;
+  vendor?: ApiRef;
+  status?: string;
+  createdAt?: string;
+}
+
+export interface FeedResponse {
+  items: ApiProduct[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export type FeedParams = {
+  cursor?: string;
+  limit?: number;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+};
+
+export const productService = {
+  getFeed: (params?: FeedParams) =>
+    AXIOS.get<FeedResponse>("api/products/feed", { params }),
+  getById: (id: string) => AXIOS.get<ApiProduct>(`api/products/${id}`),
 };
 
 export type CartLine = { product: string; quantity: number };
@@ -106,10 +167,42 @@ export const orderService = {
   getById: (id: string) => AXIOS.get(`api/orders/${id}`),
 };
 
+export interface AdminStats {
+  users: number;
+  vendors: number;
+  orders: number;
+  pendingProducts: number;
+  approvedProducts: number;
+  revenue: number;
+}
+
+export interface AdminUser {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  role: "buyer" | "vendor" | "admin";
+  storeName?: string;
+  createdAt?: string;
+}
+
+export const adminService = {
+  getStats: () => AXIOS.get<AdminStats>("api/admin/stats"),
+  getUsers: () => AXIOS.get<AdminUser[]>("api/admin/users"),
+  deleteUser: (id: string) => AXIOS.delete(`api/admin/users/${id}`),
+  getOrders: () => AXIOS.get<ApiOrder[]>("api/admin/orders"),
+  getProducts: (status?: "pending" | "approved" | "rejected") =>
+    AXIOS.get<ApiProduct[]>("api/admin/products", { params: { status } }),
+  setProductStatus: (id: string, status: "approved" | "rejected" | "pending") =>
+    AXIOS.patch<ApiProduct>(`api/admin/products/${id}/status`, { status }),
+};
+
 export const paymentService = {
   // Returns Paystack { data: { authorization_url, reference, access_code } }.
-  initiate: (orderId: string) =>
-    AXIOS.post("api/payment/initiate", { orderId }),
-  verify: (transactionId: string) =>
-    AXIOS.get(`api/payment/verify/${transactionId}`),
+  // callbackUrl is where Paystack redirects the buyer after payment.
+  initiate: (orderId: string, callbackUrl?: string) =>
+    AXIOS.post("api/payment/initiate", { orderId, callbackUrl }),
+  // Verify by Paystack reference; returns { data: { status, ... } }.
+  verify: (reference: string) =>
+    AXIOS.get(`api/payment/verify/${reference}`),
 };

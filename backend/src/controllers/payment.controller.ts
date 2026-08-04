@@ -45,6 +45,11 @@ export const initializePayment = async (req: AuthRequest, res: Response) => {
         email: req.user?.email,
         amount: Math.round(order.totalPrice * 100), // kobo
         metadata: { orderId: String(order._id) },
+        // Where Paystack redirects the buyer after payment. Supplied by the
+        // client so it can point at the right frontend origin.
+        ...(req.body.callbackUrl
+          ? { callback_url: req.body.callbackUrl }
+          : {}),
       },
       {
         headers: {

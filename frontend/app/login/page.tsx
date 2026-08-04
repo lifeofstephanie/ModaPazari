@@ -25,8 +25,11 @@ export default function LoginPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
 
+  const destinationFor = (role?: string) =>
+    role === "vendor" ? "/vendor" : role === "admin" ? "/admin" : "/shop";
+
   useEffect(() => {
-    if (user) router.replace("/shop");
+    if (user) router.replace(destinationFor(user.role));
   }, [user, router]);
 
   const onSubmit = async (data: LoginFormInputs) => {
@@ -35,9 +38,15 @@ export default function LoginPage() {
         email: data.email,
         password: data.password,
       });
-      setUser({ token: res.data.token, firstName: res.data.email });
+      setUser({
+        token: res.data.token,
+        firstName: res.data.firstName,
+        lastName: res.data.lastName,
+        email: res.data.email,
+        role: res.data.role,
+      });
       toast.success("Logged in successfully");
-      router.push("/shop");
+      router.push(destinationFor(res.data.role));
     } catch (e) {
       console.error("Login error:", e);
     }

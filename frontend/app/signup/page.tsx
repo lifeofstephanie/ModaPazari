@@ -16,6 +16,7 @@ export default function Signup() {
     formState: { errors, isSubmitting },
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
+    defaultValues: { role: "buyer" },
   });
 
   const onSubmit = async (data: SignupInput) => {
@@ -25,7 +26,7 @@ export default function Signup() {
         firstName: data.firstName,
         lastName: data.lastName,
         password: data.password,
-        role: "buyer",
+        role: data.role,
       });
       toast.success("Account created successfully");
       router.push("/login");
@@ -85,6 +86,14 @@ export default function Signup() {
             <Field label="Password">
               <input {...register("password")} type="password" placeholder="••••••••" className="input" />
               {errors.password && <Err>{errors.password.message}</Err>}
+            </Field>
+
+            <Field label="Account type">
+              <select {...register("role")} className="input">
+                <option value="buyer">Buyer — I want to shop</option>
+                <option value="vendor">Vendor — I want to sell</option>
+              </select>
+              {errors.role && <Err>{errors.role.message}</Err>}
             </Field>
 
             <button
