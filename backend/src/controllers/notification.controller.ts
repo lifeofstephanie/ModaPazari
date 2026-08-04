@@ -1,23 +1,39 @@
-import { Request, Response } from "express";
-import Notification from '../models/notifications.model'
+import { Response } from "express";
+import Notification from "../models/notifications.model";
 import { AuthRequest } from "../middleware/auth";
 
-export const createNotification = async (req:Request, res:Response)=>{
-    const {userId, message, type}= req.body
-    const notification = await Notification.create({user:userId, message, type})
-    res.status(201).json(notification)
-}
+export const getUserNotification = async (req: AuthRequest, res: Response) => {
+  const notifications = await Notification.find({ user: req.user!.id })
+    .sort({ createdAt: -1 })
+    .limit(50);
+  res.json(notifications);
+};
 
+export const getUnreadCount = async (req: AuthRequest, res: Response) => {
+  const count = await Notification.countDocuments({
+    user: req.user!.id,
+    read: false,
+  });
+  res.json({ count });
+};
 
-export const getUserNotification = async(req:AuthRequest, res:Response) =>{
-    const notifications = await Notification.find({user:req.user!.id}).sort({createdAt:-1})
+export const markAsRead = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const notification = await Notification.findOneAndUpdate(
+    { _id: id, user: req.user!.id },
+    { read: true },
+    { new: true }
+  );
+  if (!notification) {
+    return res.status(404).json({ message: "Notification not found" });
+  }
+  res.json(notification);
+};
 
-    res.json(notifications)
-}
-
-
-export const markAsRead = async(req:Request, res:Response)=>{
-    const {id} = req.params
-    const notification = await Notification.findByIdAndUpdate(id, {read:true},{new:true})
-    res.json(notification)
-}
+export const markAllRead = async (req: AuthRequest, res: Response) => {
+  await Notification.updateMany(
+    { user: req.user!.id, read: false },
+    { $set: { read: true } }
+  );
+  res.json({ message: "All notifications marked read" });
+};

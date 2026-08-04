@@ -3,6 +3,7 @@ import Order from "../models/order.model";
 import Product from "../models/product.model";
 import Fulfillment from "../models/fulfillment.model";
 import WebhookEvent from "../models/webhookEvent.model";
+import { createNotification } from "./notify.service";
 
 /** The event has already been applied — a duplicate/replayed delivery. 200. */
 export class DuplicateWebhookEventError extends Error {
@@ -90,6 +91,9 @@ export const processPaystackCharge = async (params: {
     const session = await mongoose.startSession();
     try {
         let outcome: FulfillmentOutcome | undefined;
+        let notifyInfo:
+            | { buyer: unknown; productIds: unknown[]; shortId: string }
+            | undefined;
 
         await session.withTransaction(async () => {
             // 1. Idempotency ledger. Duplicate delivery => unique-index violation.
@@ -173,7 +177,30 @@ export const processPaystackCharge = async (params: {
                 orderId: String(order._id),
                 backordered,
             };
+            notifyInfo = {
+                buyer: order.buyer,
+                productIds: order.orderItems.map((i) => i.product),
+                shortId: String(order._id).slice(-6),
+            };
         });
+
+        // Best-effort notifications, after the transaction commits.
+        if (notifyInfo) {
+            const { buyer, productIds, shortId } = notifyInfo;
+            await createNotification(
+                buyer,
+                `Your order #${shortId} is confirmed and is being processed.`,
+                "order"
+            );
+            const vendors = await Product.find({
+                _id: { $in: productIds },
+            }).distinct("vendor");
+            await Promise.all(
+                vendors.map((v) =>
+                    createNotification(v, `You have a new paid order #${shortId}.`, "order")
+                )
+            );
+        }
 
         return outcome as FulfillmentOutcome;
     } finally {

@@ -23,6 +23,7 @@ const run = async () => {
   const password = process.env.ADMIN_PASSWORD || "Admin@12345";
 
   await mongoose.connect(MONGO_URI);
+  console.log(`Connected to database: "${mongoose.connection.name}"`);
 
   const existing = await User.findOne({ email });
   if (existing) {

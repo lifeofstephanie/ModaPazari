@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/user.model";
 import Order from "../models/order.model";
 import Product from "../models/product.model";
+import { createNotification } from "../services/notify.service";
 
 export const getStats = async (_req: Request, res: Response) => {
   const [users, vendors, orders, pendingProducts, approvedProducts] =
@@ -67,5 +68,14 @@ export const setProductStatus = async (req: Request, res: Response) => {
     { new: true }
   );
   if (!product) return res.status(404).json({ message: "Product not found" });
+
+  if (status === "approved" || status === "rejected") {
+    await createNotification(
+      product.vendor,
+      `Your product "${product.name}" was ${status}.`,
+      "system"
+    );
+  }
+
   res.json(product);
 };
