@@ -83,6 +83,22 @@ export const verifyPayment = async (req: Request, res: Response) => {
         },
       }
     );
+
+    // Backup fulfilment: if Paystack confirms success, apply it to the order
+    // right here too. This is idempotent (same ledger/guards as the webhook), so
+    // whichever fires first wins and the other is a safe no-op — the order gets
+    // marked paid even if the webhook isn't configured or is delayed.
+    const data = response.data?.data;
+    if (data?.status === "success") {
+      try {
+        await processPaystackCharge({ data });
+      } catch (err) {
+        if (!(err instanceof DuplicateWebhookEventError)) {
+          console.error("[paystack] verify fulfilment failed:", err);
+        }
+      }
+    }
+
     return res.status(200).json(response.data);
   } catch (error: any) {
     console.error(

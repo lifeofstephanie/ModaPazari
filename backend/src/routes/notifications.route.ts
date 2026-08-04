@@ -1,11 +1,18 @@
 import { Router } from "express";
 import { protect } from "../middleware/auth";
-import { getUserNotification, markAsRead } from "../controllers/notification.controller";
+import {
+  getUserNotification,
+  getUnreadCount,
+  markAsRead,
+  markAllRead,
+} from "../controllers/notification.controller";
 
-const router = Router()
+const router = Router();
 
-router.use(protect)
-router.get('/',getUserNotification )
-router.put('/:id/read', markAsRead)
+router.use(protect);
+router.get("/", getUserNotification);
+router.get("/unread-count", getUnreadCount);
+router.put("/read-all", markAllRead);
+router.put("/:id/read", markAsRead);
 
-export default router
+export default router;

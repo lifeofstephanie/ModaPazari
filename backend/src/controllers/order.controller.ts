@@ -63,11 +63,25 @@ export const getOrders = async (_req: Request, res: Response) => {
   res.json(orders);
 };
 
-export const getOrderById = async (req: Request, res: Response) => {
+// The signed-in buyer's own orders, newest first — powers the order/tracking page.
+export const getMyOrders = async (req: AuthRequest, res: Response) => {
+  const orders = await Order.find({ buyer: req.user?._id })
+    .populate("orderItems.product")
+    .sort({ createdAt: -1 });
+  res.json(orders);
+};
+
+export const getOrderById = async (req: AuthRequest, res: Response) => {
   const order = await Order.findById(req.params.id).populate(
     "buyer orderItems.product"
   );
   if (!order) return res.status(404).json({ message: "Order not found" });
+
+  // Only the owner or an admin may view an order.
+  const isOwner = String((order.buyer as any)?._id ?? order.buyer) === String(req.user?._id);
+  if (!isOwner && req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Not authorized" });
+  }
   res.json(order);
 };
 
