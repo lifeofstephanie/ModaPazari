@@ -2,90 +2,113 @@ import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+const socials = [Facebook, Instagram, Twitter, Youtube];
+
 export const Footer = () => {
   return (
-    <div className="w-full min-h-[200px] bg-linear-to-t from-[#e0ebf5] to-white md:px-10 py-10 px-3">
-      <div className="flex gap-10 flex-wrap md:flex-nowrap ">
-        <section className="flex flex-col gap-5">
-          <Image src={"/images/logo.svg"} width={200} height={50} alt="Logo" />
-          <p className="w-[350px] text-[#707070] ">
-            Your premier destination for International fashion. Quality, style
-            and affordability in one place
-          </p>
-          <div className="flex gap-5 items-center ">
-            <div className="p-2 bg-white rounded-lg w-fit text-[#7A2048]">
-              <Facebook />
+    <footer className="w-full border-t border-border bg-surface">
+      <div className="mx-auto max-w-7xl px-5 py-14 md:px-10">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
+          {/* Brand */}
+          <section className="flex flex-col gap-5 md:col-span-1">
+            <Image
+              src="/images/logo.svg"
+              width={170}
+              height={44}
+              alt="Moda Pazari"
+              className="dark:invert dark:brightness-90"
+            />
+            <p className="max-w-xs text-sm leading-relaxed text-muted">
+              Your premier destination for international fashion. Quality, style
+              and affordability in one place.
+            </p>
+            <div className="flex gap-3">
+              {socials.map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  aria-label="social link"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-border text-accent transition-colors hover:border-accent hover:bg-accent-soft"
+                >
+                  <Icon size={17} />
+                </a>
+              ))}
             </div>
-            <div className="p-2 bg-white rounded-lg w-fit text-[#7A2048]">
-              <Instagram />
-            </div>
-            <div className="p-2 bg-white rounded-lg w-fit text-[#7A2048]">
-              <Twitter />
-            </div>
-            <div className="p-2 bg-white rounded-lg w-fit text-[#7A2048]">
-              <Youtube />
-            </div>
-          </div>
-        </section>
-        <section className="flex justify-between w-full flex-wrap md:px-10">
-          <div className="flex flex-col gap-5 mb-3">
-            <h2 className="font-semibold">Quick Links</h2>
-            <ul className="flex flex-col gap-3 text-[#707070] ">
-              <Link href={"/about"}>
-                <li className="hover:text-[#7A2048] cursor-pointer">
-                  About Us
-                </li>
-              </Link>
-              <Link href={"/contact"}>
-                <li className="hover:text-[#7A2048] cursor-pointer">Contact</li>
-              </Link>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Size Guide
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Shipping Info
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">Returns</li>
-            </ul>
-          </div>
-          <div className="flex flex-col gap-5 mb-3">
-            <h2 className="font-semibold">Customer Service</h2>
-            <ul className="flex flex-col gap-3 text-[#707070] ">
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Help Center
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Track Your Order
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Privacy Policy
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Terms of Service
-              </li>
-              <li className="hover:text-[#7A2048] cursor-pointer">
-                Become a Vendor
-              </li>
-            </ul>
-          </div>
-          <div className="flex flex-col gap-5 mb-3">
-            <h2 className="font-semibold">Stay Updated</h2>
-            <div className="flex flex-col gap-3 text-[#707070] w-[250px]">
-              <p>Subscribe to get special offers and updates</p>
+          </section>
+
+          {/* Links */}
+          <FooterCol
+            title="Quick Links"
+            links={[
+              { label: "About Us", href: "/about" },
+              { label: "Contact", href: "/contact" },
+              { label: "Seasonal", href: "/seasonal" },
+              { label: "Accessories", href: "/accessories" },
+              { label: "Shop", href: "/shop" },
+            ]}
+          />
+          <FooterCol
+            title="Customer Service"
+            links={[
+              { label: "Help Center", href: "/helpCenter" },
+              { label: "Privacy Policy", href: "/privacy" },
+              { label: "Terms of Service", href: "/terms" },
+              { label: "Refund Policy", href: "/refund" },
+              { label: "Become a Vendor", href: "/vendor" },
+            ]}
+          />
+
+          {/* Newsletter */}
+          <section className="flex flex-col gap-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide">
+              Stay Updated
+            </h2>
+            <p className="text-sm text-muted">
+              Subscribe to get special offers and updates.
+            </p>
+            <form className="flex flex-col gap-3">
               <input
                 placeholder="Enter your email"
-                className="h-10 shadow-sm rounded-lg px-2 text-sm w-full"
+                className="h-11 rounded-lg border border-border bg-card px-3 text-sm outline-none transition-colors focus:border-accent"
               />
               <button
                 type="submit"
-                className="h-10 bg-[#7A2048] rounded-lg w-full text-white flex justify-center items-center"
+                className="h-11 rounded-lg bg-accent-solid text-sm font-medium text-white transition-colors hover:bg-accent-strong"
               >
-                <p>Subscribe</p>
+                Subscribe
               </button>
-            </div>
-          </div>
-        </section>
+            </form>
+          </section>
+        </div>
+
+        <div className="mt-12 border-t border-border pt-6 text-center text-xs text-muted">
+          © {new Date().getFullYear()} Moda Pazari. All rights reserved.
+        </div>
       </div>
-    </div>
+    </footer>
   );
 };
+
+const FooterCol = ({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+}) => (
+  <section className="flex flex-col gap-4">
+    <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
+    <ul className="flex flex-col gap-3 text-sm text-muted">
+      {links.map((l) => (
+        <li key={l.label}>
+          <Link
+            href={l.href}
+            className="cursor-pointer transition-colors hover:text-accent"
+          >
+            {l.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </section>
+);

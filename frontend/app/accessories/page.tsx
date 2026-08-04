@@ -6,66 +6,82 @@ export default function Accessories() {
   const filteredItem = CLOTHES_DATA.filter((item) =>
     item.category.includes(selectedCategory)
   );
+
   return (
-    <main className="">
-      <section className="relative w-full overflow-hidden pb-20 px-5 md:px-10 bg-linear-to-b from-[#e0ebf5] to-white pt-30">
-        <div className="h-[50%] md:h-[60%] w-full overflow-hidden flex justify-between items-center bg-[#4f6d7a] px-2 md:px-10 rounded-2xl">
-          <div>
-            <p className="text-white text-lg md:text-3xl lg:text-5xl font-bold font-serif italic mb-4">
-              Get Your Elegance On
+    <main className="bg-background pt-28 pb-20">
+      <div className="mx-auto max-w-7xl px-5 md:px-10">
+        {/* Hero band */}
+        <div className="relative flex h-[30vh] w-full items-center overflow-hidden rounded-3xl md:h-[42vh]">
+          <img
+            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1600&q=80"
+            alt="Accessories"
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="relative z-10 px-6 md:px-12">
+            <p className="text-xs uppercase tracking-[0.25em] text-white/80">
+              Accessories
             </p>
-            <p className="text-sm md:text-2xl font-bold font-serif italic text-[#f1dac4]">
-              Jewelries That Make You Stand Out
+            <p className="mt-3 font-serif text-3xl font-bold italic text-white md:text-5xl">
+              Get your elegance on
+            </p>
+            <p className="mt-2 font-serif text-sm font-medium italic text-white/80 md:text-lg">
+              Jewellery that makes you stand out
             </p>
           </div>
-          <img
-            src={"/images/shop_hero.png"}
-            className=" w-[50%] h-fit bg-center bg-contain"
-          />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 my-5 md:my-10">
-          {filteredItem.map((item) => (
-            <Link href={`/shop/${item.id}`} key={item.id} className="group">
-              <div className="relative">
-                <div className="relative aspect-3/4 overflow-hidden rounded-[40px] border-12 border-[#7A2048]/5">
+
+        {/* Grid heading */}
+        <div className="mt-14 mb-8 flex items-end justify-between border-b border-border pb-5">
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            Jewellery
+          </h2>
+          <span className="text-sm text-muted">
+            {filteredItem.length} items
+          </span>
+        </div>
+
+        {/* Product grid */}
+        {filteredItem.length === 0 ? (
+          <p className="py-20 text-center text-muted">
+            No pieces in this collection yet — check back soon.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
+            {filteredItem.map((item) => (
+              <Link href={`/shop/${item.id}`} key={item.id} className="group">
+                <div className="relative aspect-3/4 overflow-hidden rounded-3xl border border-border bg-surface">
                   <img
                     src={item.img}
                     alt={item.name}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute bottom-6 right-6 w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform group-hover:rotate-45">
-                    <span className="text-[10px] font-bold tracking-tighter text-center leading-none uppercase">
+                  <div className="absolute bottom-4 right-4 grid h-14 w-14 place-items-center rounded-full bg-card shadow-lg transition-transform group-hover:rotate-45">
+                    <span className="text-center text-[10px] font-bold uppercase leading-none tracking-tighter">
                       Moda <br /> Pazari
                     </span>
-                    <div className="absolute -top-1 -right-1 bg-[#7A2048] text-white rounded-full p-1">
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
+                    <div className="absolute -top-1 -right-1 rounded-full bg-accent-solid p-1 text-white">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <path d="M7 17L17 7M17 7H7M17 7V17" />
                       </svg>
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 text-center">
-                  <h3 className="text-xl font-serif text-[#7A2048] italic">
+                <div className="mt-4 text-center">
+                  <h3 className="font-serif text-lg italic text-accent">
                     {item.name}
                   </h3>
-                  <p className="text-[#7A2048] font-bold mt-1 tracking-widest text-sm">
+                  <p className="mt-1 text-sm font-bold tracking-widest text-accent">
                     {item.currency} {item.price}
                   </p>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* </div> */}
-      </section>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

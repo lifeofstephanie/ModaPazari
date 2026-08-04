@@ -1,215 +1,228 @@
 "use client";
 import { categories } from "@/data/categories";
 import { Products } from "@/data/products";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
+import { ArrowRight, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
+import { TiltCard } from "@/components/TiltCard";
+
+const img = (id: string, w = 800) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;
+
+const promos = [
+  {
+    title: "Where dreams meet couture",
+    sub: "The Atelier Collection",
+    photo: "1441984904996-e0b6ba687e04",
+    href: "/seasonal",
+  },
+  {
+    title: "Enchanting styles for every woman",
+    sub: "Womenswear Edit",
+    photo: "1483985988355-763728e1935b",
+    href: "/shop",
+  },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+};
 
 export const Categories = () => {
   const container = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
   const updateButtons = () => {
     const el = container.current;
     if (!el) return;
-
-    setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth);
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   };
 
   const scroll = (direction: "left" | "right") => {
     const el = container.current;
     if (!el) return;
-
     const amount = el.clientWidth * 0.8;
-    const newScroll =
-      direction === "left" ? el.scrollLeft - amount : el.scrollLeft + amount;
-
-    el.scrollTo({ left: newScroll, behavior: "smooth" });
+    el.scrollTo({
+      left: direction === "left" ? el.scrollLeft - amount : el.scrollLeft + amount,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
     updateButtons();
     const el = container.current;
     if (!el) return;
-
     el.addEventListener("scroll", updateButtons);
     window.addEventListener("resize", updateButtons);
-
     return () => {
       el.removeEventListener("scroll", updateButtons);
       window.removeEventListener("resize", updateButtons);
     };
   }, []);
-  const elementVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.2 } },
-  };
 
   return (
-    <AnimatePresence>
-      <div className="px-5 md:px-10 py-0 md:py-10 mb-2">
-        {/* Couture Section (unchanged) */}
-        <div className="flex md:items-center gap-5 md:gap-0 md:justify-between flex-col md:flex-row">
-          <div className="w-full md:w-[49%] h-40 bg-[#efefdc] rounded-2xl flex justify-between items-end px-5 pb-5 relative overflow-hidden">
-            <p className="text-xl md:text-2xl max-w-[250px] z-10">
-              Where dreams meet Couture
-            </p>
-            <div className="bg-white w-[150px] px-5 py-2 rounded-xl text-black text-center z-10 text-sm md:text-lg">
-              <p>Shop Now</p>
+    <div className="mx-auto max-w-7xl px-5 py-16 md:px-10">
+      {/* ---------- Promo banners ---------- */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        {promos.map((p) => (
+          <Link key={p.title} href={p.href}>
+            <div className="group relative flex h-52 items-end overflow-hidden rounded-2xl border border-border">
+              <Image
+                src={img(p.photo)}
+                alt={p.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/35" />
+              <div className="relative z-10 p-6 text-white">
+                <p className="text-xs uppercase tracking-widest text-white/80">
+                  {p.sub}
+                </p>
+                <h3 className="mt-1 max-w-xs text-2xl font-semibold">{p.title}</h3>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium">
+                  Shop now
+                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                </span>
+              </div>
             </div>
-            <Image
-              alt="image"
-              src={"/images/CroppedImage3.png"}
-              width={250}
-              height={200}
-              className="absolute right-10 bottom-0 "
-            />
-          </div>
+          </Link>
+        ))}
+      </div>
 
-          <div className="w-full md:w-[49%] h-40 bg-[#fff5fa] rounded-2xl flex justify-between items-end px-5 pb-5 relative overflow-hidden">
-            <p className="text-xl md:text-2xl max-w-[250px] z-10">
-              Enchanting styles for every woman
-            </p>
-            <div className="bg-white max-w-[150px] px-5 py-2 rounded-xl text-black text-center z-10 text-sm md:text-lg">
-              <p>Shop Now</p>
-            </div>
-            <Image
-              alt="image"
-              src={"/images/CroppedImage3.png"}
-              width={250}
-              height={200}
-              className="absolute right-10 bottom-0 bg-top"
-            />
-          </div>
+      {/* ---------- Shop by category ---------- */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        variants={fadeUp}
+        viewport={{ once: true, margin: "-80px" }}
+        className="mt-20"
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Shop by category
+          </h2>
+          <p className="max-w-xl text-muted">
+            A carefully curated collection for every style and occasion.
+          </p>
         </div>
 
-        {/* Title */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          variants={elementVariants}
-          viewport={{ once: true }}
-        >
-          <div className=" mt-10 md:mt-20 mb-2 md:mb-20 flex flex-col gap-5 text-center ">
-            <h2 className="text-2xl md:text-3xl font-semibold">
-              Shop By Category
-            </h2>
-            <p className="text-[#888] text-lg">
-              Discover our carefully curated collection for every style and
-              occasion
-            </p>
-          </div>
-
-          {/* Scroll Buttons */}
-          <div className="relative">
-            {canScrollLeft && (
-              <button
-                onClick={() => scroll("left")}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black text-white px-3 py-2 rounded-full shadow"
-              >
-                ‹
-              </button>
-            )}
-
-            {canScrollRight && (
-              <button
-                onClick={() => scroll("right")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-black text-white px-3 py-2 rounded-full shadow"
-              >
-                ›
-              </button>
-            )}
-
-            {/* Scrollable Categories */}
-            <div
-              ref={container}
-              className="flex gap-5 overflow-x-auto no-scrollbar scroll-smooth py-2"
+        <div className="relative mt-10">
+          {canScrollLeft && (
+            <button
+              onClick={() => scroll("left")}
+              aria-label="Scroll left"
+              className="glass absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full p-2.5 text-accent shadow"
             >
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="min-w-[70%] h-[200px] md:min-w-[300px] md:h-40  rounded-2xl flex items-end pl-5 pb-3 cursor-pointer transition-transform hover:scale-110 ease-in-out"
-                  style={{
-                    backgroundImage: `url('${category.image}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
-                  <div className="min-w-20 px-5 py-2 h-[30px] bg-white rounded-lg flex justify-center items-center text-sm capitalize ">
-                    <p>{category.name}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          variants={elementVariants}
-          viewport={{ once: true }}
-        >
-          <div className="mt-10 md:mt-20 mb-2 md:mb-20 text-center flex flex-col gap-5">
-            <h2 className="text-2xl md:text-3xl font-semibold">
-              Featured Products
-            </h2>
-            <p className="text-[#888] text-lg">
-              Handpicked items from our latest collection, loved by our
-              customers.
-            </p>
-          </div>
-          <div className="flex flex-row flex-wrap items-center justify-between ">
-            {Products.map((product) => (
-              <div
-                key={product.id}
-                className="w-[48%] md:w-[24%] min-h-20 bg-[#fff5fa] mb-5 rounded-lg"
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              onClick={() => scroll("right")}
+              aria-label="Scroll right"
+              className="glass absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full p-2.5 text-accent shadow"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
+
+          <div
+            ref={container}
+            className="no-scrollbar flex gap-5 overflow-x-auto scroll-smooth py-2 [perspective:1000px]"
+          >
+            {categories.map((category) => (
+              <TiltCard
+                key={category.id}
+                max={9}
+                className="min-w-[65%] rounded-2xl border border-border bg-surface p-6 md:min-w-[240px]"
               >
-                <div className="w-full h-[200px] relative">
+                <div className="flex h-32 items-center justify-center" style={{ transform: "translateZ(30px)" }}>
                   <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-full w-full rounded-t-lg bg-contain bg-center"
+                    src={category.image}
+                    alt={category.name}
+                    className="max-h-full w-auto object-contain"
+                    loading="lazy"
                   />
-                  {product.tag && (
-                    <div className="absolute w-[50px] h-[30px] bg-linear-to-b from-[#e0ebf5] to-white rounded-lg z-10 top-1 left-1 flex justify-center items-center text-[#7A2048] text-sm uppercase font-bold">
-                      <p>{product.tag}</p>
-                    </div>
-                  )}
                 </div>
-                <div className="px-3 py-3 flex flex-col gap-3 mt-5">
-                  <h2 className="uppercase text-[#707070] text-sm ">
-                    {product.category}
-                  </h2>
-                  <p className="text-sm font-semibold">{product.name}</p>
-                  <div className="flex gap-3 text-[#7A2048] font-bold">
-                    {product.discount && <p>{product?.discount}</p>}
-                    <p
-                      className={`${
-                        product.discount ? "text-[#707070] line-through " : ""
-                      }`}
-                    >
-                      {product.price}
-                    </p>
-                  </div>
-                  <p>{product.rating}</p>
-                </div>
-              </div>
+                <p className="mt-4 text-center text-sm font-medium capitalize">
+                  {category.name}
+                </p>
+              </TiltCard>
             ))}
           </div>
-        </motion.div>
+        </div>
+      </motion.section>
 
-        <style jsx>{`
-          .no-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-          .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-        `}</style>
-      </div>
-    </AnimatePresence>
+      {/* ---------- Featured products ---------- */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        variants={fadeUp}
+        viewport={{ once: true, margin: "-80px" }}
+        className="mt-20"
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Featured products
+          </h2>
+          <p className="max-w-xl text-muted">
+            Handpicked items from our latest collection, loved by our customers.
+          </p>
+        </div>
+
+        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6 [perspective:1000px]">
+          {Products.map((product) => (
+            <TiltCard
+              key={product.id}
+              max={8}
+              className="overflow-hidden rounded-2xl border border-border bg-card"
+            >
+              <div className="relative h-52 bg-surface">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="h-full w-full object-contain p-4"
+                  loading="lazy"
+                />
+                {product.tag && (
+                  <span
+                    className="absolute left-3 top-3 rounded-full bg-accent-solid px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"
+                    style={{ transform: "translateZ(40px)" }}
+                  >
+                    {product.tag}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 p-4">
+                <span className="text-xs uppercase tracking-wide text-muted">
+                  {product.category}
+                </span>
+                <p className="text-sm font-semibold">{product.name}</p>
+                <div className="flex items-center gap-2 font-semibold text-accent">
+                  {product.discount && <span>{product.discount}</span>}
+                  <span className={product.discount ? "text-muted line-through" : ""}>
+                    {product.price}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted">
+                  <Star size={13} className="fill-accent text-accent" />
+                  {product.rating}
+                </div>
+              </div>
+            </TiltCard>
+          ))}
+        </div>
+      </motion.section>
+    </div>
   );
 };

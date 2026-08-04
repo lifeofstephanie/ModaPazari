@@ -1,5 +1,23 @@
 import { Request, Response } from "express";
 import Product from "../models/product.model";
+import { getProductFeed, FeedError } from "../services/productFeed.service";
+
+export const getFeed = async (req: Request, res: Response) => {
+  try {
+    const { cursor, limit, category, minPrice, maxPrice } = req.query;
+    const result = await getProductFeed({
+      cursor: cursor as string | undefined,
+      limit: limit !== undefined ? Number(limit) : undefined,
+      category: category as string | undefined,
+      minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+      maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
+    });
+    res.json(result);
+  } catch (err: any) {
+    const status = err instanceof FeedError ? err.status : 400;
+    res.status(status).json({ message: err.message });
+  }
+};
 
 export const createProduct = async (req: Request, res: Response) => {
   try {

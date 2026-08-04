@@ -2,14 +2,14 @@ import { create } from "zustand";
 
 export type CartItem = {
   cartId: string;
-  id: number;
+  // Mongo product _id — the canonical reference used at checkout.
+  productId: string;
   title: string;
-  price: string;
+  price: number; // naira, numeric
   imageUrl: string;
   quantity: number;
   color: string;
   size: string;
-  currency: string;
 };
 
 type CartState = {
@@ -18,6 +18,7 @@ type CartState = {
   increaseQty: (cartId: string) => void;
   decreaseQty: (cartId: string) => void;
   removeItem: (cartId: string) => void;
+  clearCart: () => void;
   loadCart: () => void;
 };
 
@@ -76,4 +77,9 @@ export const useCartStore = create<CartState>((set) => ({
       localStorage.setItem("myCart", JSON.stringify(newItems));
       return { items: newItems };
     }),
+
+  clearCart: () => {
+    localStorage.removeItem("myCart");
+    set({ items: [] });
+  },
 }));

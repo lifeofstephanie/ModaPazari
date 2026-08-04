@@ -1,3 +1,4 @@
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 
 export default function AboutLayout({
@@ -6,10 +7,10 @@ export default function AboutLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <>
       <Header />
-
-      <body>{children}</body>
-    </html>
+      {children}
+      <Footer />
+    </>
   );
 }

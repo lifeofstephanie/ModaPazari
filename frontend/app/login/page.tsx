@@ -4,19 +4,17 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Router } from "next/router";
 import { useRouter } from "next/navigation";
+import { loginSchema } from "@/schema/loginSchema";
+import { authService } from "@/services/api";
+import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffect } from "react";
 
-// 1️⃣ Define your validation schema with Zod
-const loginSchema = z.object({
-  email: z.string().email("Invalid email").nonempty("Email is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-// 2️⃣ Infer TypeScript type from schema
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { setUser } = useAuthStore();
   const {
     register,
     handleSubmit,
@@ -25,89 +23,143 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
 
-  const onSubmit = (data: LoginFormInputs) => {
-    console.log("Login data:", data);
-    router.push("/shop");
-    // TODO: call your login API
+  const destinationFor = (role?: string) =>
+    role === "vendor" ? "/vendor" : role === "admin" ? "/admin" : "/shop";
+
+  useEffect(() => {
+    if (user) router.replace(destinationFor(user.role));
+  }, [user, router]);
+
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      const res = await authService.sigIn({
+        email: data.email,
+        password: data.password,
+      });
+      setUser({
+        token: res.data.token,
+        firstName: res.data.firstName,
+        lastName: res.data.lastName,
+        email: res.data.email,
+        role: res.data.role,
+      });
+      toast.success("Logged in successfully");
+      router.push(destinationFor(res.data.role));
+    } catch (e) {
+      console.error("Login error:", e);
+    }
   };
 
   return (
-    <div className="bg-linear-to-b from-[#e0ebf5] to-white min-h-screen flex justify-center items-center pt-5 md:pt-10">
-      <div className="w-[90%] md:w-[80%] bg-white shadow-md h-auto md:h-[70vh] rounded-md p-5 flex gap-5 flex-col md:flex-row my-5 md:my-0">
-        {/* LEFT SIDE */}
-        <div className="bg-[#7A2048] w-full md:w-[40%] h-[260px] md:h-full rounded-md relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4 py-10">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:grid-cols-2">
+        {/* Visual */}
+        <div className="relative hidden min-h-[560px] md:block">
           <img
-            src="/images/brush.png"
-            className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] absolute top-3 md:top-10 rounded-full left-3 md:left-[5%] z-10 animate-bounce [animation-duration:2s]"
+            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=80"
+            alt="Fashion editorial"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <img
-            src="/images/about1.jpg"
-            className="w-[85%] md:max-w-[350px] h-[180px] md:h-[350px] absolute top-10 md:top-15 rounded-md left-[7%] md:left-[10%] z-0 object-cover"
-          />
-          <img
-            src="/images/accessories.png"
-            className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] absolute bottom-3 md:bottom-10 right-3 md:right-[10%] rounded-full z-10 animate-bounce [animation-duration:2s]"
-          />
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="absolute bottom-8 left-8 text-white">
+            <p className="font-[MomoSignature] text-4xl">Welcome back</p>
+            <p className="mt-1 max-w-xs text-sm text-white/80">
+              Pick up right where you left off.
+            </p>
+          </div>
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="py-5 px-5 flex-1 md:flex md:flex-col md:justify-center">
-          <p className="uppercase bg-linear-to-r from-[#7A2048] to-black bg-clip-text text-transparent font-bold mb-5">
+        {/* Form */}
+        <div className="flex flex-col justify-center px-6 py-10 md:px-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
             Moda Pazari
           </p>
-          <p className="text-2xl md:text-4xl uppercase font-semibold mt-2">
-            Welcome Back
+          <h1 className="mt-3 text-3xl font-semibold md:text-4xl">Sign in</h1>
+          <p className="mt-2 text-sm text-muted">
+            Enter your details to access your account.
           </p>
 
-          {/* 3️⃣ React Hook Form */}
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="mt-10 md:w-[80%] flex flex-col gap-3"
+            className="mt-8 flex flex-col gap-4"
           >
-            <label>Email</label>
-            <input
-              {...register("email")}
-              type="email"
-              placeholder="email"
-              className="border border-[#ccc] w-full rounded-md h-10 px-3 placeholder:text-[#D7D7D7] focus:ring-2 focus:ring-[#7A2048] outline-none text-sm"
-            />
-            {errors.email && (
-              <span className="text-red-500 text-sm">
-                {errors.email.message}
-              </span>
-            )}
+            <Field label="Email">
+              <input
+                {...register("email")}
+                type="email"
+                placeholder="you@example.com"
+                className="input"
+              />
+              {errors.email && <Err>{errors.email.message}</Err>}
+            </Field>
 
-            <label>Password</label>
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="password"
-              className="border border-[#ccc] w-full rounded-md h-10 px-3 placeholder:text-[#D7D7D7] focus:ring-2 focus:ring-[#7A2048] outline-none text-sm"
-            />
-            {errors.password && (
-              <span className="text-red-500 text-sm">
-                {errors.password.message}
-              </span>
-            )}
+            <Field label="Password">
+              <input
+                {...register("password")}
+                type="password"
+                placeholder="••••••••"
+                className="input"
+              />
+              {errors.password && <Err>{errors.password.message}</Err>}
+            </Field>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#7A2048] text-white px-5 py-3 rounded-md mt-5 hover:bg-black transition w-full md:w-[80%]"
+              className="mt-2 rounded-lg bg-accent-solid py-3 font-medium text-white transition-colors hover:bg-accent-strong disabled:opacity-60"
             >
-              {isSubmitting ? "Logging in..." : "Login"}
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </button>
+            <p className="text-center text-sm text-muted">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="font-medium text-accent hover:underline">
+                Sign up
+              </Link>
+            </p>
           </form>
-
-          <p className="text-center mt-2">
-            Do not have an account?{" "}
-            <Link href={"/signup"} className="text-[#7A2048]">
-              Sign Up
-            </Link>
-          </p>
         </div>
       </div>
+
+      <style jsx global>{`
+        .input {
+          width: 100%;
+          height: 2.75rem;
+          border-radius: 0.5rem;
+          border: 1px solid var(--border);
+          background: var(--background);
+          padding: 0 0.85rem;
+          font-size: 0.875rem;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .input::placeholder {
+          color: var(--muted);
+          opacity: 0.7;
+        }
+        .input:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px var(--ring);
+        }
+      `}</style>
     </div>
   );
 }
+
+const Field = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <label className="flex flex-col gap-1.5">
+    <span className="text-sm font-medium">{label}</span>
+    {children}
+  </label>
+);
+
+const Err = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-xs text-red-500">{children}</span>
+);
