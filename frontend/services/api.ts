@@ -137,9 +137,22 @@ export interface ApiOrder {
     color?: string;
     size?: string;
   }[];
+  subtotal?: number;
+  tax?: number;
+  shippingFee?: number;
   totalPrice: number;
   status: ApiOrderStatus;
-  shippingAddress?: { fullName?: string };
+  shippingAddress?: {
+    fullName?: string;
+    phone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  };
+  paymentReference?: string;
   createdAt?: string;
 }
 

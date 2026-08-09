@@ -19,6 +19,10 @@ const getTransporter = (): Transporter | null => {
       port: Number(SMTP_PORT) || 587,
       secure: Number(SMTP_PORT) === 465,
       auth: { user: SMTP_USER, pass: SMTP_PASS },
+      // Fail fast so a slow/misconfigured SMTP host can never hang a request.
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
     });
   }
   return transporter;

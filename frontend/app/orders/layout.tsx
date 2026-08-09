@@ -3,12 +3,11 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "Seasonal",
-  description:
-    "Shop clothing by season — winter, summer, autumn and spring collections.",
+  title: "My Orders",
+  description: "Track and review your Moda Pazari orders.",
 };
 
-export default function SeasonalLayout({
+export default function OrdersLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
