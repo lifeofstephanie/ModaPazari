@@ -34,6 +34,8 @@ export default function ProductDetails() {
   const [selectedSize, setSelectedSize] = useState("");
   const [reviews, setReviews] = useState<ApiReview[]>([]);
   const [wishlisted, setWishlisted] = useState(false);
+  const [related, setRelated] = useState<ApiProduct[]>([]);
+  const [zoom, setZoom] = useState({ x: 50, y: 50 });
 
   const { items, addToCart, increaseQty, decreaseQty } = useCartStore();
   const user = useAuthStore((s) => s.user);
@@ -49,6 +51,19 @@ export default function ProductDetails() {
     if (!id) return;
     loadReviews(id);
   }, [id, loadReviews]);
+
+  // "You may also like" — other approved products in the same department.
+  useEffect(() => {
+    if (!product?.department) return;
+    productService
+      .getFeed({ department: product.department, limit: 8 })
+      .then(({ data }) =>
+        setRelated(
+          (data.items ?? []).filter((p) => p._id !== product._id).slice(0, 4)
+        )
+      )
+      .catch(() => {});
+  }, [product?.department, product?._id]);
 
   // Reflect whether this product is already in the user's wishlist.
   useEffect(() => {
@@ -156,6 +171,20 @@ export default function ProductDetails() {
   const quantity = cartItem?.quantity ?? 1;
   const gallery = product.images?.length ? product.images : [FALLBACK_IMG];
 
+  const stockBadge = soldOut
+    ? { label: "Out of stock", cls: "bg-red-500/10 text-red-500" }
+    : hasSizes && !selectedSize
+      ? { label: "Select a size", cls: "bg-foreground/5 text-muted" }
+      : availableStock <= 5
+        ? {
+            label: `Only ${availableStock} left`,
+            cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+          }
+        : {
+            label: "In stock",
+            cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+          };
+
   const handleAdd = () => {
     if (hasSizes && !selectedSize) {
       toast.error("Please select a size");
@@ -206,30 +235,50 @@ export default function ProductDetails() {
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Gallery */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="overflow-hidden rounded-3xl border border-border bg-surface">
-              <img
-                src={mainImage}
-                alt={product.name}
-                className="aspect-[4/5] w-full object-cover"
-              />
-            </div>
-            {gallery.length > 1 && (
-              <div className="mt-4 flex gap-3">
-                {gallery.map((thumb, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setMainImage(thumb)}
-                    className={`overflow-hidden rounded-xl border-2 transition-colors ${
-                      mainImage === thumb
-                        ? "border-accent"
-                        : "border-border hover:border-accent/50"
-                    }`}
-                  >
-                    <img src={thumb} className="h-20 w-20 object-cover" alt="" />
-                  </button>
-                ))}
+            <div className="flex flex-col-reverse gap-4 lg:flex-row">
+              {/* Thumbnails — vertical rail on desktop, horizontal scroll on mobile */}
+              {gallery.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+                  {gallery.map((thumb, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setMainImage(thumb)}
+                      onMouseEnter={() => setMainImage(thumb)}
+                      className={`shrink-0 overflow-hidden rounded-xl border-2 transition-colors ${
+                        mainImage === thumb
+                          ? "border-accent"
+                          : "border-border hover:border-accent/50"
+                      }`}
+                    >
+                      <img
+                        src={thumb}
+                        className="h-16 w-16 object-cover lg:h-20 lg:w-20"
+                        alt=""
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Main image with cursor-following zoom on hover */}
+              <div
+                className="group relative flex-1 cursor-zoom-in overflow-hidden rounded-3xl border border-border bg-surface"
+                onMouseMove={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setZoom({
+                    x: ((e.clientX - r.left) / r.width) * 100,
+                    y: ((e.clientY - r.top) / r.height) * 100,
+                  });
+                }}
+              >
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  style={{ transformOrigin: `${zoom.x}% ${zoom.y}%` }}
+                  className="aspect-[4/5] w-full object-cover transition-transform duration-200 group-hover:scale-[1.8]"
+                />
               </div>
-            )}
+            </div>
           </div>
 
           {/* Details */}
@@ -242,19 +291,43 @@ export default function ProductDetails() {
             <h1 className="mt-2 font-serif text-4xl italic text-accent md:text-5xl">
               {product.name}
             </h1>
-            <p className="mt-4 text-3xl font-semibold">{naira(product.price)}</p>
 
-            <p
-              className={`mt-2 text-sm ${soldOut ? "text-red-500" : "text-muted"}`}
+            {/* Rating */}
+            <a
+              href="#reviews"
+              className="mt-3 flex w-fit items-center gap-2 text-sm"
             >
-              {soldOut
-                ? "Out of stock"
-                : hasSizes
-                  ? selectedSize
-                    ? `${availableStock} in stock (${selectedSize})`
-                    : "Select a size"
-                  : `${product.stock} in stock`}
+              <span className="flex">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={16}
+                    className={
+                      n <= Math.round(avgRating)
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-border"
+                    }
+                  />
+                ))}
+              </span>
+              <span className="text-muted transition-colors hover:text-accent">
+                {reviews.length > 0
+                  ? `${avgRating.toFixed(1)} · ${reviews.length} review${reviews.length === 1 ? "" : "s"}`
+                  : "No reviews yet"}
+              </span>
+            </a>
+
+            <p className="mt-4 text-3xl font-bold">{naira(product.price)}</p>
+            <p className="mt-1 text-xs text-muted">
+              VAT &amp; shipping calculated at checkout
             </p>
+
+            {/* Stock badge */}
+            <span
+              className={`mt-4 inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${stockBadge.cls}`}
+            >
+              {stockBadge.label}
+            </span>
 
             <div className="my-7 h-px w-full bg-border" />
 
@@ -334,7 +407,7 @@ export default function ProductDetails() {
                   Add to Cart
                 </button>
               ) : (
-                <div className="flex flex-1 items-center justify-between rounded-full border border-border px-6 py-2.5">
+                <div className="flex flex-1 items-center justify-between rounded-full border border-accent px-4 py-1.5 text-accent">
                   <button
                     aria-label="Decrease quantity"
                     onClick={() => {
@@ -343,18 +416,18 @@ export default function ProductDetails() {
                         quantity === 1 ? "Removed from cart!" : "Quantity reduced"
                       );
                     }}
-                    className="text-lg"
+                    className="grid h-9 w-9 place-items-center rounded-full text-xl leading-none transition-colors hover:bg-accent-soft"
                   >
                     −
                   </button>
-                  <span className="font-medium">{quantity}</span>
+                  <span className="font-semibold text-foreground">{quantity}</span>
                   <button
                     aria-label="Increase quantity"
                     onClick={() => {
                       increaseQty(cartItem.cartId);
                       toast.success("Quantity updated");
                     }}
-                    className="text-lg"
+                    className="grid h-9 w-9 place-items-center rounded-full text-xl leading-none transition-colors hover:bg-accent-soft"
                   >
                     +
                   </button>
@@ -393,13 +466,42 @@ export default function ProductDetails() {
         </div>
 
         {/* Reviews */}
-        <ReviewsSection
-          productId={id}
-          reviews={reviews}
-          avg={avgRating}
-          canReview={!!user}
-          onAdded={() => loadReviews(id)}
-        />
+        <div id="reviews" className="scroll-mt-24">
+          <ReviewsSection
+            productId={id}
+            reviews={reviews}
+            avg={avgRating}
+            canReview={!!user}
+            onAdded={() => loadReviews(id)}
+          />
+        </div>
+
+        {/* You may also like */}
+        {related.length > 0 && (
+          <section className="mt-16">
+            <h2 className="mb-6 text-xl font-semibold tracking-tight">
+              You may also like
+            </h2>
+            <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+              {related.map((p) => (
+                <Link key={p._id} href={`/shop/${p._id}`} className="group">
+                  <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-surface">
+                    <img
+                      src={p.images?.[0] || FALLBACK_IMG}
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <p className="mt-2 truncate text-sm font-medium transition-colors group-hover:text-accent">
+                    {p.name}
+                  </p>
+                  <p className="text-sm text-accent">{naira(p.price)}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

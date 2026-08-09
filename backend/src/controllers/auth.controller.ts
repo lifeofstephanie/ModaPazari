@@ -41,11 +41,13 @@ export const registerUser = async (req: Request, res: Response) => {
       emailVerifyToken: sha256(rawVerify),
     });
 
-    // Best-effort verification email.
+    // Best-effort verification email — fire-and-forget so a slow SMTP host can
+    // never delay (or hang) the registration response. sendEmail catches its
+    // own errors internally.
     const verifyUrl = `${FRONTEND()}/verify-email?token=${rawVerify}&email=${encodeURIComponent(
       user.email
     )}`;
-    await sendEmail({
+    void sendEmail({
       to: user.email,
       subject: "Confirm your email",
       html: emailTemplates.verifyEmail(user.firstName, verifyUrl),
@@ -99,7 +101,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const url = `${FRONTEND()}/reset-password?token=${rawToken}&email=${encodeURIComponent(
       user.email
     )}`;
-    await sendEmail({
+    void sendEmail({
       to: user.email,
       subject: "Reset your password",
       html: emailTemplates.passwordReset(user.firstName, url),

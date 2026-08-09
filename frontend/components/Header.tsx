@@ -28,7 +28,8 @@ export const Header = ({ isOverlay = false }) => {
   const [cartOpen, setCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
-  const { items, loadCart } = useCartStore();
+  const { items, loadCart, increaseQty, decreaseQty, removeItem } =
+    useCartStore();
   const { user, logout } = useAuthStore();
   const router = useRouter();
 
@@ -226,7 +227,7 @@ export const Header = ({ isOverlay = false }) => {
         />
       )}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-[85%] overflow-auto border-l border-border bg-card shadow-xl transition-transform duration-500 md:w-1/3 ${
+        className={`fixed top-0 right-0 z-50 flex h-full w-[85%] flex-col overflow-hidden border-l border-border bg-card shadow-xl transition-transform duration-500 md:w-1/3 ${
           cartOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -247,24 +248,48 @@ export const Header = ({ isOverlay = false }) => {
               <div key={item.cartId} className="relative flex gap-4 border-b border-border pb-4">
                 <img
                   src={item.imageUrl}
-                  className="h-28 w-28 rounded-lg object-cover"
+                  className="h-24 w-24 shrink-0 rounded-lg object-cover"
                   loading="lazy"
                 />
-                <div className="flex-1">
-                  <p className="text-accent">{item.title}</p>
-                  <p className="text-sm text-muted">{item.quantity}x</p>
+                <div className="flex flex-1 flex-col">
+                  <p className="pr-6 text-sm font-medium text-foreground">
+                    {item.title}
+                  </p>
                   {(item.color || item.size) && (
-                    <p className="text-sm text-muted">
+                    <p className="text-xs text-muted">
                       {[item.color, item.size].filter(Boolean).join(" · ")}
                     </p>
                   )}
-                  <p className="text-accent">
-                    ₦{Number(item.price).toLocaleString()}
+                  <p className="mt-0.5 font-semibold text-accent">
+                    ₦{(Number(item.price) * item.quantity).toLocaleString()}
                   </p>
+
+                  {/* Quantity stepper */}
+                  <div className="mt-auto flex items-center gap-3 pt-2">
+                    <div className="inline-flex items-center rounded-full border border-border">
+                      <button
+                        onClick={() => decreaseQty(item.cartId)}
+                        aria-label="Decrease quantity"
+                        className="grid h-7 w-7 place-items-center text-base leading-none text-muted transition-colors hover:text-accent"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-6 text-center text-sm font-medium">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => increaseQty(item.cartId)}
+                        aria-label="Increase quantity"
+                        className="grid h-7 w-7 place-items-center text-base leading-none text-muted transition-colors hover:text-accent"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
-                    useCartStore.getState().removeItem(item.cartId);
+                    removeItem(item.cartId);
                     toast.success("Item removed from cart");
                   }}
                   className="absolute top-0 right-0 text-muted transition-colors hover:text-red-600"
@@ -278,7 +303,7 @@ export const Header = ({ isOverlay = false }) => {
         </div>
 
         {items.length > 0 && (
-          <div className="space-y-4 border-t border-border p-4">
+          <div className="shrink-0 space-y-4 border-t border-border p-4">
             <div className="flex justify-between text-lg font-semibold">
               <span>Total:</span>
               <span>

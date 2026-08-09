@@ -28,6 +28,10 @@ export type ProductFormValues = {
 
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Common apparel sizes offered in the dropdown; "Custom…" allows anything else
+// (numeric shoe/waist sizes, one-size, etc.).
+const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+
 type AddProductModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -78,6 +82,7 @@ export const AddProductModal = ({
   const [colorInput, setColorInput] = useState("");
   const [variants, setVariants] = useState<SizeVariant[]>([]);
   const [sizeInput, setSizeInput] = useState("");
+  const [customSize, setCustomSize] = useState("");
   const [sizeStock, setSizeStock] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -97,6 +102,7 @@ export const AddProductModal = ({
       setVariants(initialVariants ?? []);
       setColorInput("");
       setSizeInput("");
+      setCustomSize("");
       setSizeStock("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,7 +112,8 @@ export const AddProductModal = ({
   const sizeTotal = variants.reduce((s, v) => s + v.stock, 0);
 
   const addVariant = () => {
-    const size = sizeInput.trim();
+    // "__custom" reveals a free-text field; otherwise use the picked size.
+    const size = (sizeInput === "__custom" ? customSize : sizeInput).trim();
     const stock = Math.max(0, Math.floor(Number(sizeStock) || 0));
     if (!size) return;
     setVariants((prev) =>
@@ -115,6 +122,7 @@ export const AddProductModal = ({
         : [...prev, { size, stock }]
     );
     setSizeInput("");
+    setCustomSize("");
     setSizeStock("");
   };
 
@@ -220,13 +228,13 @@ export const AddProductModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex justify-center overflow-y-auto p-4">
       <div
-        className="absolute inset-0 bg-foreground/50"
+        className="fixed inset-0 bg-foreground/50"
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg">
+      <div className="relative my-auto w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">{heading}</h2>
@@ -295,20 +303,41 @@ export const AddProductModal = ({
           </div>
 
           <Field label="Sizes & stock (optional)" htmlFor="p-size">
-            <div className="flex gap-2">
-              <input
+            <p className="mb-2 text-xs text-muted">
+              Add sizes if this product is sold per size — stock is then tracked
+              per size. Leave empty to use the single stock above.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <select
                 id="p-size"
                 value={sizeInput}
                 onChange={(e) => setSizeInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addVariant();
-                  }
-                }}
-                placeholder="Size (e.g. S, M, 42)"
                 className="modal-input flex-1"
-              />
+              >
+                <option value="">Select size…</option>
+                {COMMON_SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+                <option value="__custom">Custom…</option>
+              </select>
+
+              {sizeInput === "__custom" && (
+                <input
+                  value={customSize}
+                  onChange={(e) => setCustomSize(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addVariant();
+                    }
+                  }}
+                  placeholder="e.g. 42, One size"
+                  className="modal-input flex-1"
+                />
+              )}
+
               <input
                 value={sizeStock}
                 onChange={(e) => setSizeStock(e.target.value)}
