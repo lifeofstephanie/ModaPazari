@@ -58,7 +58,17 @@ export const getVendors = async (req: Request, res: Response) => {
   const { page, limit, skip } = getPagination(req);
   const filter: Record<string, unknown> = { role: "vendor" };
   if (status && ["pending", "approved", "rejected"].includes(String(status))) {
-    filter.vendorStatus = String(status);
+    // Legacy vendors created before vendorStatus existed have the field absent;
+    // treat those as "pending" so they surface for approval instead of vanishing.
+    if (status === "pending") {
+      filter.$or = [
+        { vendorStatus: "pending" },
+        { vendorStatus: { $exists: false } },
+        { vendorStatus: null },
+      ];
+    } else {
+      filter.vendorStatus = String(status);
+    }
   }
   const [items, total] = await Promise.all([
     User.find(filter).select("-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
