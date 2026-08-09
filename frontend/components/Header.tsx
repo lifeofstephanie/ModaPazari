@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const navLinks = [
   { label: "SHOP", href: "/shop" },
@@ -103,6 +104,23 @@ export const Header = ({ isOverlay = false }) => {
             </Link>
           ))}
 
+          {hydrated && user && (
+            <Link href="/orders">
+              <li className="cursor-pointer transition-colors hover:text-accent">
+                ORDERS
+              </li>
+            </Link>
+          )}
+          {hydrated && user && (
+            <Link href="/wishlist">
+              <li className="cursor-pointer transition-colors hover:text-accent">
+                WISHLIST
+              </li>
+            </Link>
+          )}
+
+          <NotificationBell />
+
           <ThemeToggle />
 
           {hydrated &&
@@ -116,6 +134,7 @@ export const Header = ({ isOverlay = false }) => {
               <button
                 onClick={() => {
                   logout();
+                  loadCart(); // token gone -> reverts to the (empty) guest cart
                   router.push("/login");
                 }}
                 className="cursor-pointer rounded-full bg-accent-solid px-4 py-2 text-xs text-white transition-colors hover:bg-accent-strong"
@@ -161,7 +180,9 @@ export const Header = ({ isOverlay = false }) => {
 
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label="Toggle menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
             className={onPhoto ? "text-white" : "text-foreground"}
           >
             {menuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -171,6 +192,7 @@ export const Header = ({ isOverlay = false }) => {
 
       {/* MOBILE MENU */}
       <div
+        id="mobile-menu"
         className={`fixed left-0 right-0 top-0 z-40 bg-background pt-20 transition-transform duration-500 ease-in-out md:hidden ${
           menuOpen ? "translate-y-0" : "-translate-y-full"
         }`}
@@ -181,6 +203,11 @@ export const Header = ({ isOverlay = false }) => {
               <li className="transition-colors hover:text-accent">{l.label}</li>
             </Link>
           ))}
+          {hydrated && user && (
+            <Link href="/orders" onClick={() => setMenuOpen(false)}>
+              <li className="transition-colors hover:text-accent">MY ORDERS</li>
+            </Link>
+          )}
           {hydrated && !user && (
             <Link href="/login" onClick={() => setMenuOpen(false)}>
               <div className="w-fit rounded-full bg-accent-solid px-5 py-2 text-xs text-white">

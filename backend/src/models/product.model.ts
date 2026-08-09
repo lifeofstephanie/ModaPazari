@@ -6,11 +6,27 @@ export interface IProduct extends Document {
     price:number;
     brand:mongoose.Types.ObjectId;
     category:mongoose.Types.ObjectId;
+    // Aggregate stock. For sized products this is kept in sync as the sum of
+    // the per-size variant stocks; for non-sized products it's the source of truth.
     stock:number;
     vendor:mongoose.Types.ObjectId;
     images:string[];
+    // Available colours (hex or CSS colour names). Optional.
+    colors:string[];
+    // Per-size stock. When non-empty, the product is sold by size and stock is
+    // tracked at this level; when empty, the flat `stock` field is used.
+    variants:{ size:string; stock:number }[];
+    // Top-level department the buyer browses by.
+    department:'clothes'|'accessories'|'footwear'|'bags'|'jewelry'|'beauty'|'other';
+    // Season — only meaningful for clothes; 'none' otherwise.
+    season:'winter'|'summer'|'autumn'|'spring'|'none';
     status:'pending'|'approved'|'rejected'
 }
+
+export const DEPARTMENTS = [
+    'clothes','accessories','footwear','bags','jewelry','beauty','other',
+] as const;
+export const SEASONS = ['winter','summer','autumn','spring','none'] as const;
 
 const productSchema = new Schema<IProduct>(
     {
@@ -33,6 +49,25 @@ const productSchema = new Schema<IProduct>(
             min:0
         },
         images:[{type:String}],
+        colors:[{type:String}],
+        variants:[
+            {
+                size:{ type:String, required:true },
+                stock:{ type:Number, default:0, min:0 },
+                _id:false
+            }
+        ],
+        department:{
+            type:String,
+            enum:['clothes','accessories','footwear','bags','jewelry','beauty','other'],
+            default:'other',
+            index:true
+        },
+        season:{
+            type:String,
+            enum:['winter','summer','autumn','spring','none'],
+            default:'none'
+        },
         category:{
             type:mongoose.Schema.Types.ObjectId,
             ref:'Category'

@@ -5,7 +5,9 @@ import Product from "../models/product.model";
 export interface GuestCartItem {
     product: string;
     quantity: number;
-    price: number;
+    price?: number;
+    color?: string;
+    size?: string;
 }
 
 export interface MergeCartInput {
@@ -13,23 +15,19 @@ export interface MergeCartInput {
     guestItems: GuestCartItem[];
 }
 
-export interface MergedCartItem {
-    product: string;
-    quantity: number;
-    price: number;
-}
-
-/**
- * A single, user-facing note about something we changed while merging.
- *   - "dropped"      : the item is gone (deleted product or out of stock).
- *   - "capped"       : requested quantity exceeded stock, trimmed to what's left.
- *   - "price_change" : the guest-cart price was stale; current price differs.
- */
 export interface CartWarning {
     product: string;
     name?: string;
     reason: "dropped" | "capped" | "price_change";
     message: string;
+}
+
+export interface MergedCartItem {
+    product: string;
+    quantity: number;
+    price: number;
+    color: string;
+    size: string;
 }
 
 export interface MergeCartResult {
@@ -46,23 +44,16 @@ export class CartMergeError extends Error {
     }
 }
 
+// A cart line is identified by product + colour + size.
+const variantKey = (productId: string, color = "", size = "") =>
+    `${productId}|${color}|${size}`;
+
 /**
- * Merges a guest cart into the buyer's persisted MongoDB cart when they log in.
+ * Merges a guest cart into the buyer's persisted MongoDB cart on login.
  *
- * Everything happens inside one Mongoose transaction so we never partial-save:
- * the product re-read and the cart write share a session and commit together or
- * not at all.
- *
- * Behaviour:
- *   1. Quantities for items present in both carts are summed, then capped at the
- *      product's current stock.
- *   2. Prices are always re-read from the Product collection — the guest-cart
- *      price is treated as untrusted and only used to detect that it went stale.
- *   3. Items whose product was deleted or is out of stock are dropped, and every
- *      drop / cap / price change is reported back in `warnings` for the UI.
- *
- * NOTE: multi-document transactions require MongoDB to run as a replica set (or
- * mongos) — same constraint as createOrder in order.service.ts.
+ * Runs in one transaction. Quantities for the same product+colour+size are
+ * summed then capped at stock; prices are re-read from the DB (guest price is
+ * only used to flag staleness); deleted / out-of-stock products are dropped.
  */
 export const mergeGuestCart = async (
     input: MergeCartInput
@@ -72,7 +63,6 @@ export const mergeGuestCart = async (
         let result: MergeCartResult | undefined;
 
         await session.withTransaction(async () => {
-            // 1. Load (or lazily create) the buyer's persisted cart.
             let cart = await Cart.findOne({ user: input.user }).session(session);
             if (!cart) {
                 const created = await Cart.create(
@@ -82,63 +72,73 @@ export const mergeGuestCart = async (
                 cart = created[0];
             }
 
-            // 2. Sum quantities per product across the DB cart and the guest cart.
-            //    Guest prices are stashed only so we can flag stale pricing later.
-            const quantities = new Map<string, number>();
-            const guestPrices = new Map<string, number>();
+            // Sum quantities per variant across the DB cart and the guest cart.
+            const lines = new Map<
+                string,
+                { product: string; color: string; size: string; quantity: number; guestPrice?: number }
+            >();
 
             for (const item of cart.items) {
-                const id = String(item.product);
-                quantities.set(id, (quantities.get(id) ?? 0) + item.quantity);
+                const key = variantKey(String(item.product), item.color ?? "", item.size ?? "");
+                const existing = lines.get(key);
+                if (existing) existing.quantity += item.quantity;
+                else
+                    lines.set(key, {
+                        product: String(item.product),
+                        color: item.color ?? "",
+                        size: item.size ?? "",
+                        quantity: item.quantity,
+                    });
             }
+
             for (const item of input.guestItems) {
                 if (!mongoose.isValidObjectId(item.product)) {
-                    throw new CartMergeError(
-                        `Invalid product id in guest cart: ${item.product}`
-                    );
+                    throw new CartMergeError(`Invalid product id: ${item.product}`);
                 }
                 const qty = Number(item.quantity);
                 if (!Number.isFinite(qty) || qty <= 0) {
-                    throw new CartMergeError(
-                        `Invalid quantity for product ${item.product}`
-                    );
+                    throw new CartMergeError(`Invalid quantity for product ${item.product}`);
                 }
-                const id = String(item.product);
-                quantities.set(id, (quantities.get(id) ?? 0) + qty);
-                guestPrices.set(id, item.price);
+                const color = item.color ?? "";
+                const size = item.size ?? "";
+                const key = variantKey(item.product, color, size);
+                const existing = lines.get(key);
+                if (existing) {
+                    existing.quantity += qty;
+                    existing.guestPrice = item.price;
+                } else {
+                    lines.set(key, {
+                        product: item.product,
+                        color,
+                        size,
+                        quantity: qty,
+                        guestPrice: item.price,
+                    });
+                }
             }
 
-            // 3. Re-read every referenced product in one query, under the session,
-            //    so pricing/stock reflect the same committed snapshot as our write.
-            const ids = [...quantities.keys()];
-            const products = await Product.find({ _id: { $in: ids } }).session(
-                session
-            );
-            const productById = new Map(
-                products.map((p) => [String(p._id), p])
-            );
+            // Re-read every referenced product once, under the session.
+            const ids = [...new Set([...lines.values()].map((l) => l.product))];
+            const products = await Product.find({ _id: { $in: ids } }).session(session);
+            const productById = new Map(products.map((p) => [String(p._id), p]));
 
-            // 4. Resolve each merged line into a clean item + any warnings.
             const items: MergedCartItem[] = [];
             const warnings: CartWarning[] = [];
 
-            for (const id of ids) {
-                const product = productById.get(id);
+            for (const line of lines.values()) {
+                const product = productById.get(line.product) as any;
 
-                // Deleted product -> drop.
                 if (!product) {
                     warnings.push({
-                        product: id,
+                        product: line.product,
                         reason: "dropped",
-                        message: "Item was removed because it is no longer available.",
+                        message: "An item was removed because it is no longer available.",
                     });
                     continue;
                 }
-
-                // Out of stock -> drop.
                 if (product.stock <= 0) {
                     warnings.push({
-                        product: id,
+                        product: line.product,
                         name: product.name,
                         reason: "dropped",
                         message: `"${product.name}" is out of stock and was removed.`,
@@ -146,43 +146,44 @@ export const mergeGuestCart = async (
                     continue;
                 }
 
-                const requested = quantities.get(id) ?? 0;
-                const quantity = Math.min(requested, product.stock);
-                if (quantity < requested) {
+                const quantity = Math.min(line.quantity, product.stock);
+                if (quantity < line.quantity) {
                     warnings.push({
-                        product: id,
+                        product: line.product,
                         name: product.name,
                         reason: "capped",
-                        message: `Only ${product.stock} of "${product.name}" left; quantity reduced from ${requested} to ${product.stock}.`,
+                        message: `Only ${product.stock} of "${product.name}" left; quantity reduced.`,
                     });
                 }
-
-                // Guest price was informational only; flag it if it drifted.
-                const guestPrice = guestPrices.get(id);
-                if (guestPrice !== undefined && guestPrice !== product.price) {
+                if (line.guestPrice !== undefined && line.guestPrice !== product.price) {
                     warnings.push({
-                        product: id,
+                        product: line.product,
                         name: product.name,
                         reason: "price_change",
-                        message: `Price for "${product.name}" changed from ${guestPrice} to ${product.price}.`,
+                        message: `Price for "${product.name}" changed to ${product.price}.`,
                     });
                 }
 
-                items.push({ product: id, quantity, price: product.price });
+                items.push({
+                    product: line.product,
+                    quantity,
+                    price: product.price,
+                    color: line.color,
+                    size: line.size,
+                });
             }
 
-            // 5. Persist the cleaned cart. The Cart schema stores only
-            //    product + quantity, so price lives in the returned summary.
             cart.items = items.map((i) => ({
-                product: i.product as unknown as ICart["items"][number]["product"],
+                product: i.product,
                 quantity: i.quantity,
-            }));
+                color: i.color,
+                size: i.size,
+            })) as unknown as ICart["items"];
             await cart.save({ session });
 
             result = { items, warnings };
         });
 
-        // withTransaction guarantees result is set if the transaction committed.
         return result as MergeCartResult;
     } finally {
         await session.endSession();

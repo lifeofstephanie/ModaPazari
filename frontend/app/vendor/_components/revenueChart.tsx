@@ -21,30 +21,34 @@ ChartJS.register(
   Legend
 );
 
-const SERIES = [
-  { label: "Earnings", color: "#7a2048", data: [12, 23, 14, 32, 20, 30, 24, 15, 25, 27, 22, 18] },
-  { label: "Goods Sold", color: "#2f6f6a", data: [8, 20, 8.5, 18, 12, 15, 12, 9, 14, 16, 13, 11] },
-  { label: "Profit", color: "#b07d2b", data: [4, 20, 5.5, 16, 7, 25, 12, 6, 11, 13, 9, 7] },
-];
-
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export const VendorRevenueChart = () => {
+type Monthly = { label: string; earnings: number };
+
+export const VendorRevenueChart = ({ monthly }: { monthly?: Monthly[] }) => {
+  const hasData = !!monthly && monthly.length > 0;
+  const labels = hasData ? monthly!.map((m) => m.label) : MONTHS;
+  const values = hasData
+    ? monthly!.map((m) => m.earnings)
+    : new Array(12).fill(0);
+
   const data = {
-    labels: MONTHS,
-    datasets: SERIES.map((s) => ({
-      label: s.label,
-      data: s.data,
-      borderColor: s.color,
-      backgroundColor: s.color,
-      borderWidth: 2,
-      tension: 0.35,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-    })),
+    labels,
+    datasets: [
+      {
+        label: "Earnings",
+        data: values,
+        borderColor: "#7a2048",
+        backgroundColor: "#7a2048",
+        borderWidth: 2,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      },
+    ],
   };
 
   const options: ChartOptions<"line"> = {
@@ -55,7 +59,7 @@ export const VendorRevenueChart = () => {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx) => `${ctx.dataset.label}: ₦${ctx.parsed.y}k`,
+          label: (ctx) => `₦${Number(ctx.parsed.y).toLocaleString("en-NG")}`,
         },
       },
     },
@@ -64,12 +68,11 @@ export const VendorRevenueChart = () => {
         beginAtZero: true,
         border: { display: false },
         grid: { color: "rgba(128,128,128,0.15)" },
-        ticks: { callback: (v) => `₦${v}k` },
+        ticks: {
+          callback: (v) => `₦${Number(v).toLocaleString("en-NG")}`,
+        },
       },
-      x: {
-        border: { display: false },
-        grid: { display: false },
-      },
+      x: { border: { display: false }, grid: { display: false } },
     },
   };
 
@@ -78,18 +81,11 @@ export const VendorRevenueChart = () => {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold">Revenue report</h2>
-          <p className="text-sm text-muted">Monthly performance</p>
+          <p className="text-sm text-muted">Earnings over the last 12 months</p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          {SERIES.map((s) => (
-            <div key={s.label} className="flex items-center gap-2 text-muted">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: s.color }}
-              />
-              {s.label}
-            </div>
-          ))}
+        <div className="flex items-center gap-2 text-sm text-muted">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent-solid" />
+          Earnings
         </div>
       </div>
 

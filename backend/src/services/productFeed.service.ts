@@ -12,9 +12,19 @@ export class FeedError extends Error {
 
 export interface FeedFilters {
     category?: string;
+    department?: string;
+    season?: string;
+    q?: string;
     minPrice?: number;
     maxPrice?: number;
 }
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const DEPARTMENTS = [
+    "clothes", "accessories", "footwear", "bags", "jewelry", "beauty", "other",
+];
+const SEASONS = ["winter", "summer", "autumn", "spring", "none"];
 
 export interface FeedInput extends FeedFilters {
     cursor?: string;
@@ -116,6 +126,25 @@ export const getProductFeed = async (input: FeedInput): Promise<FeedResult> => {
             throw new FeedError("Invalid category id");
         }
         query.category = input.category;
+    }
+
+    if (input.department) {
+        if (!DEPARTMENTS.includes(input.department)) {
+            throw new FeedError("Invalid department");
+        }
+        query.department = input.department;
+    }
+
+    if (input.season) {
+        if (!SEASONS.includes(input.season)) {
+            throw new FeedError("Invalid season");
+        }
+        query.season = input.season;
+    }
+
+    if (input.q && input.q.trim()) {
+        const rx = new RegExp(escapeRegex(input.q.trim()), "i");
+        query.$or = [{ name: rx }, { description: rx }];
     }
 
     if (input.minPrice !== undefined || input.maxPrice !== undefined) {

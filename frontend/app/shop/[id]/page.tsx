@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, Heart, RotateCcw, ShieldCheck, Star, Truck } from "lucide-react";
 import Link from "next/link";
 import { useCartStore, CartItem } from "@/store/useCartStore";
-import { productService, type ApiProduct } from "@/services/api";
+import {
+  productService,
+  reviewService,
+  wishlistService,
+  type ApiProduct,
+  type ApiReview,
+} from "@/services/api";
+import { useAuthStore } from "@/store/useAuthStore";
 import toast from "react-hot-toast";
 
 const FALLBACK_IMG = "/images/image.png";
@@ -23,8 +30,61 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [mainImage, setMainImage] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [reviews, setReviews] = useState<ApiReview[]>([]);
+  const [wishlisted, setWishlisted] = useState(false);
 
   const { items, addToCart, increaseQty, decreaseQty } = useCartStore();
+  const user = useAuthStore((s) => s.user);
+
+  const loadReviews = useCallback((pid: string) => {
+    reviewService
+      .getForProduct(pid)
+      .then(({ data }) => setReviews(data))
+      .catch(() => setReviews([]));
+  }, []);
+
+  useEffect(() => {
+    if (!id) return;
+    loadReviews(id);
+  }, [id, loadReviews]);
+
+  // Reflect whether this product is already in the user's wishlist.
+  useEffect(() => {
+    if (!user || !id) return;
+    wishlistService
+      .get()
+      .then(({ data }) =>
+        setWishlisted(!!data?.products?.some((p) => p._id === id))
+      )
+      .catch(() => {});
+  }, [user, id]);
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      toast.error("Please sign in to save items");
+      return;
+    }
+    try {
+      if (wishlisted) {
+        setWishlisted(false);
+        await wishlistService.remove(id);
+        toast.success("Removed from wishlist");
+      } else {
+        setWishlisted(true);
+        await wishlistService.add(id);
+        toast.success("Saved to wishlist");
+      }
+    } catch {
+      setWishlisted((w) => !w); // revert on failure
+    }
+  };
+
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+      : 0;
 
   useEffect(() => {
     let active = true;
@@ -35,6 +95,10 @@ export default function ProductDetails() {
         if (!active) return;
         setProduct(data);
         setMainImage(data.images?.[0] || FALLBACK_IMG);
+        setSelectedColor(data.colors?.[0] ?? "");
+        // Default to the first in-stock size, if the product is sized.
+        const firstInStock = data.variants?.find((v) => v.stock > 0);
+        setSelectedSize(firstInStock?.size ?? "");
       } catch {
         if (active) setNotFound(true);
       } finally {
@@ -65,13 +129,42 @@ export default function ProductDetails() {
     );
   }
 
-  const cartId = product._id;
-  const cartItem = items.find((i) => i.cartId === cartId);
+  const hasColors = !!product.colors && product.colors.length > 0;
+  const hasSizes = !!product.variants && product.variants.length > 0;
+  const activeColor = hasColors ? selectedColor : "";
+  const activeSize = hasSizes ? selectedSize : "";
+
+  const selectedVariant = hasSizes
+    ? product.variants!.find((v) => v.size === selectedSize)
+    : undefined;
+
+  // Availability: for sized products, the selected size's stock; else flat stock.
+  const availableStock = hasSizes ? selectedVariant?.stock ?? 0 : product.stock;
+  const soldOut = hasSizes
+    ? product.variants!.every((v) => v.stock <= 0)
+    : product.stock === 0;
+
+  // Synthetic id for a brand-new guest line; the server assigns real ids once
+  // logged in. Matching for an existing line is by variant, not this id.
+  const cartId = `${product._id}-${activeColor}-${activeSize}`;
+  const cartItem = items.find(
+    (i) =>
+      i.productId === product._id &&
+      i.color === activeColor &&
+      i.size === activeSize
+  );
   const quantity = cartItem?.quantity ?? 1;
-  const soldOut = product.stock === 0;
   const gallery = product.images?.length ? product.images : [FALLBACK_IMG];
 
   const handleAdd = () => {
+    if (hasSizes && !selectedSize) {
+      toast.error("Please select a size");
+      return;
+    }
+    if (availableStock <= 0) {
+      toast.error("That option is out of stock");
+      return;
+    }
     const newItem: CartItem = {
       cartId,
       productId: product._id,
@@ -79,8 +172,8 @@ export default function ProductDetails() {
       price: product.price,
       imageUrl: mainImage,
       quantity: 1,
-      color: "",
-      size: "",
+      color: selectedColor,
+      size: activeSize,
     };
     addToCart(newItem);
     toast.success("Added to cart!");
@@ -154,12 +247,75 @@ export default function ProductDetails() {
             <p
               className={`mt-2 text-sm ${soldOut ? "text-red-500" : "text-muted"}`}
             >
-              {soldOut ? "Out of stock" : `${product.stock} in stock`}
+              {soldOut
+                ? "Out of stock"
+                : hasSizes
+                  ? selectedSize
+                    ? `${availableStock} in stock (${selectedSize})`
+                    : "Select a size"
+                  : `${product.stock} in stock`}
             </p>
 
             <div className="my-7 h-px w-full bg-border" />
 
             <p className="leading-relaxed text-muted">{product.description}</p>
+
+            {/* Colours */}
+            {hasColors && (
+              <div className="mt-7">
+                <p className="mb-3 text-sm font-medium">
+                  Colour
+                  {selectedColor && (
+                    <span className="ml-2 font-normal text-muted">
+                      {selectedColor}
+                    </span>
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {product.colors!.map((color) => (
+                    <button
+                      key={color}
+                      aria-label={color}
+                      title={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`h-9 w-9 rounded-full transition-transform hover:scale-110 ${
+                        selectedColor === color
+                          ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                          : "border border-border"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sizes */}
+            {hasSizes && (
+              <div className="mt-7">
+                <p className="mb-3 text-sm font-medium">Size</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants!.map((v) => {
+                    const out = v.stock <= 0;
+                    const active = selectedSize === v.size;
+                    return (
+                      <button
+                        key={v.size}
+                        disabled={out}
+                        onClick={() => setSelectedSize(v.size)}
+                        className={`min-w-11 rounded-md border px-3 py-2 text-sm transition-colors ${
+                          active
+                            ? "border-accent bg-accent-soft text-accent"
+                            : "border-border hover:border-accent"
+                        } ${out ? "cursor-not-allowed text-muted line-through opacity-50" : ""}`}
+                      >
+                        {v.size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -182,7 +338,7 @@ export default function ProductDetails() {
                   <button
                     aria-label="Decrease quantity"
                     onClick={() => {
-                      decreaseQty(cartId);
+                      decreaseQty(cartItem.cartId);
                       toast.success(
                         quantity === 1 ? "Removed from cart!" : "Quantity reduced"
                       );
@@ -195,7 +351,7 @@ export default function ProductDetails() {
                   <button
                     aria-label="Increase quantity"
                     onClick={() => {
-                      increaseQty(cartId);
+                      increaseQty(cartItem.cartId);
                       toast.success("Quantity updated");
                     }}
                     className="text-lg"
@@ -213,6 +369,18 @@ export default function ProductDetails() {
                   Buy Now
                 </button>
               )}
+
+              <button
+                onClick={toggleWishlist}
+                aria-label="Save to wishlist"
+                className={`grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full border transition-colors ${
+                  wishlisted
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-border text-muted hover:border-accent hover:text-accent"
+                }`}
+              >
+                <Heart size={20} fill={wishlisted ? "currentColor" : "none"} />
+              </button>
             </div>
 
             {/* Trust badges */}
@@ -223,6 +391,15 @@ export default function ProductDetails() {
             </div>
           </div>
         </div>
+
+        {/* Reviews */}
+        <ReviewsSection
+          productId={id}
+          reviews={reviews}
+          avg={avgRating}
+          canReview={!!user}
+          onAdded={() => loadReviews(id)}
+        />
       </div>
     </main>
   );
@@ -245,5 +422,132 @@ function Badge({
         <p className="text-xs text-muted">{sub}</p>
       </div>
     </div>
+  );
+}
+
+const Stars = ({ value, size = 14 }: { value: number; size?: number }) => (
+  <span className="inline-flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        size={size}
+        className={n <= Math.round(value) ? "text-amber-400" : "text-border"}
+        fill={n <= Math.round(value) ? "currentColor" : "none"}
+      />
+    ))}
+  </span>
+);
+
+const reviewerName = (u: ApiReview["user"]) => {
+  if (!u || typeof u === "string") return "Customer";
+  return [u.firstName, u.lastName].filter(Boolean).join(" ") || "Customer";
+};
+
+function ReviewsSection({
+  productId,
+  reviews,
+  avg,
+  canReview,
+  onAdded,
+}: {
+  productId: string;
+  reviews: ApiReview[];
+  avg: number;
+  canReview: boolean;
+  onAdded: () => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await reviewService.create(productId, { rating, comment: comment.trim() });
+      setComment("");
+      setRating(5);
+      toast.success("Review posted");
+      onAdded();
+    } catch {
+      /* interceptor toasts */
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="mt-16 border-t border-border pt-10">
+      <div className="flex flex-wrap items-center gap-4">
+        <h2 className="text-2xl font-semibold">Reviews</h2>
+        {reviews.length > 0 && (
+          <span className="flex items-center gap-2 text-sm text-muted">
+            <Stars value={avg} /> {avg.toFixed(1)} · {reviews.length} review
+            {reviews.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
+
+      {canReview ? (
+        <form onSubmit={submit} className="mt-6 max-w-xl rounded-2xl border border-border bg-card p-5">
+          <p className="mb-2 text-sm font-medium">Write a review</p>
+          <div className="mb-3 flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                aria-label={`${n} star`}
+              >
+                <Star
+                  size={22}
+                  className={n <= rating ? "text-amber-400" : "text-border"}
+                  fill={n <= rating ? "currentColor" : "none"}
+                />
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share your thoughts…"
+            rows={3}
+            className="w-full rounded-lg border border-border bg-background p-3 text-sm outline-none focus:border-accent"
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-3 rounded-md bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:opacity-60"
+          >
+            {submitting ? "Posting…" : "Post review"}
+          </button>
+        </form>
+      ) : (
+        <p className="mt-4 text-sm text-muted">
+          <Link href="/login" className="text-accent hover:underline">
+            Sign in
+          </Link>{" "}
+          to write a review.
+        </p>
+      )}
+
+      <div className="mt-8 space-y-5">
+        {reviews.length === 0 ? (
+          <p className="text-sm text-muted">No reviews yet — be the first.</p>
+        ) : (
+          reviews.map((r) => (
+            <div key={r._id} className="border-b border-border/60 pb-4 last:border-b-0">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{reviewerName(r.user)}</p>
+                <Stars value={r.rating} />
+              </div>
+              {r.comment && (
+                <p className="mt-1.5 text-sm text-muted">{r.comment}</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }

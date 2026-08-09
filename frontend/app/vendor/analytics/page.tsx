@@ -9,36 +9,47 @@ import {
   Tooltip,
   type ChartOptions,
 } from "chart.js";
+import { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { PageHeader } from "../_components/pageHeader";
 import { VendorRevenueChart } from "../_components/revenueChart";
+import { vendorService, type VendorStats } from "@/services/api";
 
 ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
-const TILES = [
-  { label: "Conversion rate", value: "3.8%", note: "of visitors purchase" },
-  { label: "Avg. order value", value: "₦58,200", note: "per completed order" },
-  { label: "Repeat buyers", value: "41%", note: "returning customers" },
-  { label: "Refund rate", value: "1.4%", note: "of delivered orders" },
-];
-
-const TOP_CATEGORIES = [
-  { name: "Womenswear", share: 38 },
-  { name: "Accessories", share: 26 },
-  { name: "Menswear", share: 19 },
-  { name: "Footwear", share: 11 },
-  { name: "Outerwear", share: 6 },
-];
-
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
 export default function AnalyticsPage() {
+  const [stats, setStats] = useState<VendorStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    vendorService
+      .getStats()
+      .then(({ data }) => setStats(data))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const avgOrder =
+    stats && stats.orders > 0 ? Math.round(stats.revenue / stats.orders) : 0;
+
+  const tiles = [
+    { label: "Revenue", value: stats ? naira(stats.revenue) : "—" },
+    { label: "Orders", value: stats?.orders ?? "—" },
+    { label: "Avg. order value", value: stats ? naira(avgOrder) : "—" },
+    { label: "Products live", value: stats?.productsLive ?? "—" },
+  ];
+
+  const best = stats?.bestSellers ?? [];
+  const totalSales = best.reduce((s, p) => s + p.sales, 0);
+
   const barData = {
-    labels: WEEKDAYS,
+    labels: best.map((p) => p.name),
     datasets: [
       {
-        label: "Orders",
-        data: [42, 55, 38, 61, 72, 88, 47],
+        label: "Sales",
+        data: best.map((p) => p.sales),
         backgroundColor: "#7a2048",
         borderRadius: 6,
         maxBarThickness: 34,
@@ -49,12 +60,20 @@ export default function AnalyticsPage() {
   const barOptions: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `₦${Number(ctx.parsed.y).toLocaleString("en-NG")}`,
+        },
+      },
+    },
     scales: {
       y: {
         beginAtZero: true,
         border: { display: false },
         grid: { color: "rgba(128,128,128,0.15)" },
+        ticks: { callback: (v) => `₦${Number(v).toLocaleString("en-NG")}` },
       },
       x: { border: { display: false }, grid: { display: false } },
     },
@@ -65,54 +84,74 @@ export default function AnalyticsPage() {
       <PageHeader
         eyebrow="Insights"
         title="Analytics"
-        subtitle="Performance trends across your store."
+        subtitle="Performance across your store."
       />
 
       {/* Metric tiles */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {TILES.map((t) => (
+        {tiles.map((t) => (
           <div key={t.label} className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm text-muted">{t.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{t.value}</p>
-            <p className="mt-1 text-xs text-muted">{t.note}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">
+              {loading ? "…" : t.value}
+            </p>
           </div>
         ))}
       </div>
 
       {/* Revenue chart */}
       <div className="mt-6">
-        <VendorRevenueChart />
+        <VendorRevenueChart monthly={stats?.monthly} />
       </div>
 
-      {/* Orders + categories */}
+      {/* Top products + share */}
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         <div className="rounded-xl border border-border bg-card p-6 lg:w-3/5">
-          <h2 className="text-base font-semibold">Orders this week</h2>
-          <p className="text-sm text-muted">Daily order volume</p>
+          <h2 className="text-base font-semibold">Top products by revenue</h2>
+          <p className="text-sm text-muted">Your best-selling items</p>
           <div className="mt-6 h-64">
-            <Bar data={barData} options={barOptions} />
+            {loading ? (
+              <div className="grid h-full place-items-center text-sm text-muted">
+                Loading…
+              </div>
+            ) : best.length === 0 ? (
+              <div className="grid h-full place-items-center text-sm text-muted">
+                No sales data yet.
+              </div>
+            ) : (
+              <Bar data={barData} options={barOptions} />
+            )}
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 lg:w-2/5">
-          <h2 className="text-base font-semibold">Top categories</h2>
-          <p className="text-sm text-muted">Share of sales</p>
-          <ul className="mt-6 space-y-4">
-            {TOP_CATEGORIES.map((c) => (
-              <li key={c.name}>
-                <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span>{c.name}</span>
-                  <span className="text-muted">{c.share}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className="h-full rounded-full bg-accent-solid"
-                    style={{ width: `${c.share}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-base font-semibold">Sales share</h2>
+          <p className="text-sm text-muted">Share of revenue by product</p>
+          {best.length === 0 ? (
+            <p className="mt-6 text-sm text-muted">No sales data yet.</p>
+          ) : (
+            <ul className="mt-6 space-y-4">
+              {best.map((p) => {
+                const share = totalSales > 0 ? (p.sales / totalSales) * 100 : 0;
+                return (
+                  <li key={p.id}>
+                    <div className="mb-1.5 flex items-center justify-between text-sm">
+                      <span className="truncate pr-2">{p.name}</span>
+                      <span className="shrink-0 text-muted">
+                        {share.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+                      <div
+                        className="h-full rounded-full bg-accent-solid"
+                        style={{ width: `${share}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </div>

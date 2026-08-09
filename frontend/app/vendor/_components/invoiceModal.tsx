@@ -18,7 +18,7 @@ const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 const parseNaira = (s: string) => Number(s.replace(/[^\d.]/g, "")) || 0;
 
 // Build a plausible line-item breakdown that sums exactly to the order total.
-const buildLineItems = (order: VendorOrder) => {
+const buildLineItems = (order: VendorOrder): InvoiceLineItem[] => {
   const total = parseNaira(order.total);
   const count = Math.max(1, order.items);
   const per = Math.floor(total / count);
@@ -30,7 +30,12 @@ const buildLineItems = (order: VendorOrder) => {
   });
 };
 
-export type InvoiceLineItem = { name: string; qty: number; amount: number };
+export type InvoiceLineItem = {
+  name: string;
+  qty: number;
+  amount: number;
+  variant?: string;
+};
 
 type InvoiceModalProps = {
   order: VendorOrder | null;
@@ -112,7 +117,12 @@ export const InvoiceModal = ({
             <tbody>
               {lineItems.map((l, i) => (
                 <tr key={i} className="border-b border-border/60">
-                  <td className="py-2.5 pr-3">{l.name}</td>
+                  <td className="py-2.5 pr-3">
+                    {l.name}
+                    {l.variant && (
+                      <span className="block text-xs text-muted">{l.variant}</span>
+                    )}
+                  </td>
                   <td className="py-2.5 pr-3 text-center text-muted">{l.qty}</td>
                   <td className="py-2.5 text-right">{naira(l.amount)}</td>
                 </tr>

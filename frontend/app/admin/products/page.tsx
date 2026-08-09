@@ -4,6 +4,7 @@ import { Check, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { adminService, type ApiProduct } from "@/services/api";
+import { Pager } from "../_components/pager";
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 type Filter = "pending" | "approved" | "rejected";
@@ -25,12 +26,15 @@ export default function AdminProducts() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
-  const load = useCallback(async (f: Filter) => {
+  const load = useCallback(async (f: Filter, p: number) => {
     try {
       setLoading(true);
-      const { data } = await adminService.getProducts(f);
-      setProducts(data);
+      const { data } = await adminService.getProducts(f, p);
+      setProducts(data.items);
+      setPages(data.pages);
     } catch {
       /* interceptor toasts */
     } finally {
@@ -39,8 +43,13 @@ export default function AdminProducts() {
   }, []);
 
   useEffect(() => {
-    load(filter);
-  }, [filter, load]);
+    load(filter, page);
+  }, [filter, page, load]);
+
+  // Reset to first page whenever the status filter changes.
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   const moderate = async (p: ApiProduct, status: "approved" | "rejected") => {
     try {
@@ -158,6 +167,7 @@ export default function AdminProducts() {
             </table>
           </div>
         )}
+        <Pager page={page} pages={pages} onPage={setPage} />
       </div>
     </div>
   );

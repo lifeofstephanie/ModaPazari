@@ -1,77 +1,109 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import mongoose from "mongoose";
 import Cart from "../models/cart.model";
+import { AuthRequest } from "../middleware/auth";
 import { mergeGuestCart, CartMergeError } from "../services/cartMerge.service";
 
-export const addToCart = async (req: Request, res: Response) => {
-    const { productId, quantity } = req.body;
-
-    const qty = Number(quantity);
-    if (!productId || !Number.isInteger(qty) || qty < 1) {
-        return res
-            .status(400)
-            .json({ message: "productId and a positive integer quantity are required" });
-    }
-
-    const cart = await Cart.findOne({ user: req.user!.id });
-
-    if (cart) {
-        const item = cart.items.find((i) => i.product.toString() === productId);
-        if (item) {
-            item.quantity += qty;
-        } else {
-            cart.items.push({ product: productId, quantity: qty });
-        }
-        await cart.save();
-        return res.json(cart);
-    } else {
-        const newCart = await Cart.create({
-            user: req.user!.id,
-            items: [{ product: productId, quantity: qty }],
-        });
-        return res.status(201).json(newCart);
-    }
-};
-
-export const getCart = async (req: Request, res: Response) => {
-    const cart = await Cart.findOne({ user: req.user!.id }).populate(
-        "items.product"
+// Always hand the client the populated cart so it has display fields.
+const populatedCart = (userId: string) =>
+    Cart.findOne({ user: userId }).populate(
+        "items.product",
+        "name price images stock status"
     );
 
-    if (!cart) {
-        // Treat "no cart yet" as an empty cart rather than a 404 so the client
-        // has a consistent shape to render.
-        return res.json({ user: req.user!.id, items: [] });
-    }
+const sameVariant = (
+    a: { color?: string; size?: string },
+    b: { color?: string; size?: string }
+) => (a.color ?? "") === (b.color ?? "") && (a.size ?? "") === (b.size ?? "");
+
+export const getCart = async (req: AuthRequest, res: Response) => {
+    const cart = await populatedCart(req.user!.id);
+    if (!cart) return res.json({ user: req.user!.id, items: [] });
     return res.json(cart);
 };
 
+export const addToCart = async (req: AuthRequest, res: Response) => {
+    const { productId, quantity, color = "", size = "" } = req.body;
+    const qty = Number(quantity);
+
+    if (!productId || !mongoose.isValidObjectId(productId)) {
+        return res.status(400).json({ message: "Valid productId is required" });
+    }
+    if (!Number.isInteger(qty) || qty < 1) {
+        return res.status(400).json({ message: "quantity must be a positive integer" });
+    }
+
+    let cart = await Cart.findOne({ user: req.user!.id });
+    if (!cart) {
+        cart = await Cart.create({ user: req.user!.id, items: [] });
+    }
+
+    const line = cart.items.find(
+        (i) => i.product.toString() === productId && sameVariant(i, { color, size })
+    );
+    if (line) {
+        line.quantity += qty;
+    } else {
+        cart.items.push({ product: productId, quantity: qty, color, size } as any);
+    }
+    await cart.save();
+
+    return res.status(201).json(await populatedCart(req.user!.id));
+};
+
+export const updateCartItem = async (req: AuthRequest, res: Response) => {
+    const { itemId } = req.params;
+    const qty = Number(req.body.quantity);
+
+    if (!Number.isInteger(qty) || qty < 1) {
+        return res.status(400).json({ message: "quantity must be a positive integer" });
+    }
+
+    const cart = await Cart.findOne({ user: req.user!.id });
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    const line = (cart.items as any).id(itemId);
+    if (!line) return res.status(404).json({ message: "Item not found" });
+
+    line.quantity = qty;
+    await cart.save();
+
+    return res.json(await populatedCart(req.user!.id));
+};
+
+export const removeFromCart = async (req: AuthRequest, res: Response) => {
+    const { itemId } = req.params;
+
+    const cart = await Cart.findOneAndUpdate(
+        { user: req.user!.id },
+        { $pull: { items: { _id: itemId } } },
+        { new: true }
+    );
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    return res.json(await populatedCart(req.user!.id));
+};
+
+export const clearCart = async (req: AuthRequest, res: Response) => {
+    await Cart.findOneAndUpdate(
+        { user: req.user!.id },
+        { $set: { items: [] } },
+        { new: true, upsert: true }
+    );
+    return res.json({ user: req.user!.id, items: [] });
+};
+
 // Merges a guest cart (from localStorage) into the user's DB cart on login.
-// Returns the merged items plus a warning summary (dropped/capped/price changes).
-export const mergeCart = async (req: Request, res: Response) => {
+export const mergeCart = async (req: AuthRequest, res: Response) => {
     try {
-        const result = await mergeGuestCart({
+        await mergeGuestCart({
             user: req.user!.id,
             guestItems: req.body.items ?? [],
         });
-        return res.json(result);
+        // Return the populated cart so the client can render immediately.
+        return res.json(await populatedCart(req.user!.id));
     } catch (err: any) {
         const status = err instanceof CartMergeError ? err.status : 400;
         return res.status(status).json({ message: err.message });
     }
-};
-
-// Removes a single line item. Previously this cleared the whole cart.
-export const removeFromCart = async (req: Request, res: Response) => {
-    const { productId } = req.params;
-
-    const cart = await Cart.findOneAndUpdate(
-        { user: req.user!.id },
-        { $pull: { items: { product: productId } } },
-        { new: true }
-    );
-
-    if (!cart) {
-        return res.status(404).json({ message: "Cart not found" });
-    }
-    return res.json(cart);
 };

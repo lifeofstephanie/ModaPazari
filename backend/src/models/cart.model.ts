@@ -1,37 +1,44 @@
 import { Document, model, Schema } from "mongoose";
 
-interface ICartItem { 
-    product:Schema.Types.ObjectId,
-    quantity:number
+interface ICartItem {
+    product: Schema.Types.ObjectId;
+    quantity: number;
+    color?: string;
+    size?: string;
 }
 
-export interface ICart extends Document{
-    user:Schema.Types.ObjectId,
-    items:ICartItem[]
+export interface ICart extends Document {
+    user: Schema.Types.ObjectId;
+    items: ICartItem[];
 }
 
 const cartSchema = new Schema<ICart>(
     {
-        user:{
-            type:Schema.Types.ObjectId,
-            ref:"User",
-            required:true
+        user: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+            unique: true,
         },
-        items:[
+        items: [
             {
-                product:{
-                    type:Schema.Types.ObjectId,
-                    ref:"Product",
-                    required:true
+                product: {
+                    type: Schema.Types.ObjectId,
+                    ref: "Product",
+                    required: true,
                 },
-                quantity:{
-                    type:Number,
-                    default:1
-                }
-            }
-        ]
+                quantity: {
+                    type: Number,
+                    default: 1,
+                    min: 1,
+                },
+                // Variant selectors — a product+colour+size is a distinct line.
+                color: { type: String, default: "" },
+                size: { type: String, default: "" },
+            },
+        ],
     },
-    {timestamps:true}
-)
+    { timestamps: true }
+);
 
-export default model<ICart>("Cart", cartSchema)
+export default model<ICart>("Cart", cartSchema);

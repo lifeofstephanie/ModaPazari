@@ -3,6 +3,8 @@ import axios from "axios";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import Order from "../models/order.model";
+import Product from "../models/product.model";
+import User from "../models/user.model";
 import { AuthRequest } from "../middleware/auth";
 import {
   processPaystackCharge,
@@ -10,6 +12,7 @@ import {
   OrderNotReadyError,
   PaymentDataError,
 } from "../services/paystackFulfillment.service";
+import { toKobo } from "../utils/money";
 
 const PAYSTACK_API = process.env.PAYSTACK_API || "https://api.paystack.co";
 
@@ -39,12 +42,26 @@ export const initializePayment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Order is not payable" });
     }
 
+    // If every item in the order belongs to a single vendor who has connected a
+    // payout account, split the payment to their Paystack subaccount (the
+    // platform keeps its commission automatically). Mixed-vendor orders settle
+    // to the platform and are reconciled separately.
+    const vendorIds = await Product.find({
+      _id: { $in: order.orderItems.map((i) => i.product) },
+    }).distinct("vendor");
+    let subaccount: string | undefined;
+    if (vendorIds.length === 1) {
+      const vendor = await User.findById(vendorIds[0]).select("paystackSubaccount");
+      subaccount = vendor?.paystackSubaccount || undefined;
+    }
+
     const response = await axios.post(
       `${PAYSTACK_API}/transaction/initialize`,
       {
         email: req.user?.email,
-        amount: Math.round(order.totalPrice * 100), // kobo
+        amount: toKobo(order.totalPrice), // naira -> kobo at the Paystack edge
         metadata: { orderId: String(order._id) },
+        ...(subaccount ? { subaccount } : {}),
         // Where Paystack redirects the buyer after payment. Supplied by the
         // client so it can point at the right frontend origin.
         ...(req.body.callbackUrl

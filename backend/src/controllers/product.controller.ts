@@ -4,11 +4,15 @@ import { getProductFeed, FeedError } from "../services/productFeed.service";
 
 export const getFeed = async (req: Request, res: Response) => {
   try {
-    const { cursor, limit, category, minPrice, maxPrice } = req.query;
+    const { cursor, limit, category, department, season, q, minPrice, maxPrice } =
+      req.query;
     const result = await getProductFeed({
       cursor: cursor as string | undefined,
       limit: limit !== undefined ? Number(limit) : undefined,
       category: category as string | undefined,
+      department: department as string | undefined,
+      season: season as string | undefined,
+      q: q as string | undefined,
       minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
       maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
     });

@@ -75,6 +75,11 @@ export default function VendorProductsPage() {
       description: values.description,
       price: values.price,
       stock: values.stock,
+      images: values.images,
+      colors: values.colors,
+      variants: values.variants,
+      department: values.department,
+      season: values.season,
     });
     toast.success("Product submitted for review");
     await load();
@@ -86,6 +91,11 @@ export default function VendorProductsPage() {
       description: values.description,
       price: values.price,
       stock: values.stock,
+      images: values.images,
+      colors: values.colors,
+      variants: values.variants,
+      department: values.department,
+      season: values.season,
     });
     toast.success("Product updated");
     await load();
@@ -96,7 +106,11 @@ export default function VendorProductsPage() {
     description: p.description,
     price: String(p.price),
     stock: String(p.stock),
-    category: "",
+    department: p.department ?? "other",
+    season: p.season ?? "none",
+    images: p.images ?? [],
+    colors: p.colors ?? [],
+    variants: p.variants ?? [],
   });
 
   return (

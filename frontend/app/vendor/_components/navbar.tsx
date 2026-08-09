@@ -1,75 +1,58 @@
 "use client";
 
 import {
-  AlertTriangle,
-  Banknote,
   Bell,
   LogOut,
+  Package,
   Settings,
   ShoppingBag,
+  Tag,
   User,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
+import { notificationService, type ApiNotification } from "@/services/api";
 
-type Notification = {
-  id: number;
-  icon: LucideIcon;
-  tone: "accent" | "amber" | "emerald";
-  title: string;
-  detail: string;
-  time: string;
-  unread: boolean;
+const TYPE_META: Record<
+  ApiNotification["type"],
+  { icon: LucideIcon; tone: string }
+> = {
+  order: { icon: ShoppingBag, tone: "bg-accent-soft text-accent" },
+  promo: { icon: Tag, tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  system: { icon: Package, tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
 };
 
-const TONES: Record<Notification["tone"], string> = {
-  accent: "bg-accent-soft text-accent",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+const timeAgo = (iso?: string) => {
+  if (!iso) return "";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 };
-
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    icon: ShoppingBag,
-    tone: "accent",
-    title: "New order #2451",
-    detail: "Annette Black · ₦74,500",
-    time: "5m ago",
-    unread: true,
-  },
-  {
-    id: 2,
-    icon: AlertTriangle,
-    tone: "amber",
-    title: "Low stock",
-    detail: "“Silk Wrap Midi Dress” — 4 left",
-    time: "1h ago",
-    unread: true,
-  },
-  {
-    id: 3,
-    icon: Banknote,
-    tone: "emerald",
-    title: "Payout processed",
-    detail: "₦120,000 credited to your account",
-    time: "2h ago",
-    unread: false,
-  },
-];
 
 export const Navbar = () => {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState<null | "bell" | "profile">(null);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const { data } = await notificationService.list();
+      setNotifications(data);
+    } catch {
+      /* silent — bell just stays empty */
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -77,8 +60,33 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const markAllRead = () =>
-    setNotifications((list) => list.map((n) => ({ ...n, unread: false })));
+  // Poll for new notifications every 30s (no realtime infra needed).
+  useEffect(() => {
+    loadNotifications();
+    const id = setInterval(loadNotifications, 30000);
+    return () => clearInterval(id);
+  }, [loadNotifications]);
+
+  const markAllRead = async () => {
+    setNotifications((list) => list.map((n) => ({ ...n, read: true })));
+    try {
+      await notificationService.markAllRead();
+    } catch {
+      loadNotifications();
+    }
+  };
+
+  const openOne = async (n: ApiNotification) => {
+    if (n.read) return;
+    setNotifications((list) =>
+      list.map((x) => (x._id === n._id ? { ...x, read: true } : x))
+    );
+    try {
+      await notificationService.markRead(n._id);
+    } catch {
+      /* optimistic; refetch on next poll */
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -94,7 +102,6 @@ export const Navbar = () => {
           : "border-transparent bg-surface"
       }`}
     >
-      {/* Click-away layer */}
       {menu && (
         <button
           aria-hidden
@@ -105,7 +112,6 @@ export const Navbar = () => {
       )}
 
       <div className="relative flex h-16 items-center justify-between px-5 md:px-8">
-        {/* Brand + greeting */}
         <div className="flex items-center gap-3 pl-12 md:pl-0">
           <span className="font-[MomoSignature] text-2xl leading-none text-accent">
             Moda Pazari
@@ -117,7 +123,6 @@ export const Navbar = () => {
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications */}
           <div className="relative z-50">
@@ -145,65 +150,57 @@ export const Navbar = () => {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={markAllRead}
-                    className="text-xs font-medium text-accent transition-colors hover:text-accent-strong"
-                  >
-                    Mark all read
-                  </button>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="text-xs font-medium text-accent transition-colors hover:text-accent-strong"
+                    >
+                      Mark all read
+                    </button>
+                  )}
                 </div>
 
                 <ul className="max-h-80 overflow-y-auto">
-                  {notifications.map((n) => {
-                    const Icon = n.icon;
-                    return (
-                      <li key={n.id}>
-                        <button
-                          onClick={() =>
-                            setNotifications((list) =>
-                              list.map((x) =>
-                                x.id === n.id ? { ...x, unread: false } : x
-                              )
-                            )
-                          }
-                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface ${
-                            n.unread ? "bg-accent-soft/40" : ""
-                          }`}
-                        >
-                          <span
-                            className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full ${TONES[n.tone]}`}
+                  {notifications.length === 0 ? (
+                    <li className="px-4 py-8 text-center text-sm text-muted">
+                      No notifications yet.
+                    </li>
+                  ) : (
+                    notifications.map((n) => {
+                      const meta = TYPE_META[n.type] ?? TYPE_META.system;
+                      const Icon = meta.icon;
+                      return (
+                        <li key={n._id}>
+                          <button
+                            onClick={() => openOne(n)}
+                            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface ${
+                              !n.read ? "bg-accent-soft/40" : ""
+                            }`}
                           >
-                            <Icon size={16} />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-2">
-                              <span className="truncate text-sm font-medium">
-                                {n.title}
+                            <span
+                              className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full ${meta.tone}`}
+                            >
+                              <Icon size={16} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center gap-2">
+                                <span className="flex-1 text-sm leading-snug">
+                                  {n.message}
+                                </span>
+                                {!n.read && (
+                                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-solid" />
+                                )}
                               </span>
-                              {n.unread && (
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-solid" />
-                              )}
+                              <span className="mt-0.5 block text-[11px] text-muted">
+                                {timeAgo(n.createdAt)}
+                              </span>
                             </span>
-                            <span className="mt-0.5 block truncate text-xs text-muted">
-                              {n.detail}
-                            </span>
-                            <span className="mt-0.5 block text-[11px] text-muted">
-                              {n.time}
-                            </span>
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
+                          </button>
+                        </li>
+                      );
+                    })
+                  )}
                 </ul>
-
-                <Link
-                  href="/vendor/orders/pending"
-                  onClick={() => setMenu(null)}
-                  className="block border-t border-border px-4 py-3 text-center text-sm font-medium text-accent transition-colors hover:bg-surface"
-                >
-                  View all activity
-                </Link>
               </div>
             )}
           </div>

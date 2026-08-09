@@ -3,7 +3,9 @@ import Order from "../models/order.model";
 import Product from "../models/product.model";
 import Fulfillment from "../models/fulfillment.model";
 import WebhookEvent from "../models/webhookEvent.model";
+import User from "../models/user.model";
 import { createNotification } from "./notify.service";
+import { sendEmail, emailTemplates } from "./email.service";
 
 /** The event has already been applied — a duplicate/replayed delivery. 200. */
 export class DuplicateWebhookEventError extends Error {
@@ -92,7 +94,7 @@ export const processPaystackCharge = async (params: {
     try {
         let outcome: FulfillmentOutcome | undefined;
         let notifyInfo:
-            | { buyer: unknown; productIds: unknown[]; shortId: string }
+            | { buyer: unknown; productIds: unknown[]; shortId: string; total: number }
             | undefined;
 
         await session.withTransaction(async () => {
@@ -132,21 +134,13 @@ export const processPaystackCharge = async (params: {
                 );
             }
 
-            // 3. Decrement stock, guarded so it never goes negative.
+            // 3. Stock was already reserved (decremented) at checkout, so we do
+            //    NOT decrement again here. Mark the reservation as committed.
+            order.stockReserved = false;
+            order.reservedUntil = undefined;
+            await order.save({ session });
+
             const backordered: { product: string; quantity: number }[] = [];
-            for (const item of order.orderItems) {
-                const res = await Product.updateOne(
-                    { _id: item.product, stock: { $gte: item.quantity } },
-                    { $inc: { stock: -item.quantity } },
-                    { session }
-                );
-                if (res.matchedCount === 0) {
-                    backordered.push({
-                        product: String(item.product),
-                        quantity: item.quantity,
-                    });
-                }
-            }
 
             // 4. Create the fulfilment (unique on `order` as a final guard).
             try {
@@ -181,12 +175,13 @@ export const processPaystackCharge = async (params: {
                 buyer: order.buyer,
                 productIds: order.orderItems.map((i) => i.product),
                 shortId: String(order._id).slice(-6),
+                total: order.totalPrice,
             };
         });
 
-        // Best-effort notifications, after the transaction commits.
+        // Best-effort notifications + emails, after the transaction commits.
         if (notifyInfo) {
-            const { buyer, productIds, shortId } = notifyInfo;
+            const { buyer, productIds, shortId, total } = notifyInfo;
             await createNotification(
                 buyer,
                 `Your order #${shortId} is confirmed and is being processed.`,
@@ -200,6 +195,22 @@ export const processPaystackCharge = async (params: {
                     createNotification(v, `You have a new paid order #${shortId}.`, "order")
                 )
             );
+
+            // Order confirmation email to the buyer.
+            const buyerUser = await User.findById(buyer as any).select(
+                "email firstName"
+            );
+            if (buyerUser?.email) {
+                await sendEmail({
+                    to: buyerUser.email,
+                    subject: `Order #${shortId} confirmed`,
+                    html: emailTemplates.orderConfirmed(
+                        buyerUser.firstName,
+                        shortId,
+                        `₦${total.toLocaleString("en-NG")}`
+                    ),
+                });
+            }
         }
 
         return outcome as FulfillmentOutcome;

@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Package, ShoppingBag, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, Package, ShoppingBag, Store, Tag, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -9,8 +9,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 const tabs = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Vendors", href: "/admin/vendors", icon: Store },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
+  { name: "Promos", href: "/admin/promos", icon: Tag },
 ];
 
 export const AdminNav = () => {

@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import { makeLimiter } from "./config/rateLimit";
 import { errorHandler, notFound } from "./middleware/error";
 import authRoutes from "./routes/auth.route";
 import productRoutes from "./routes/product.route";
@@ -16,6 +16,7 @@ import paymentRoutes from "./routes/payment.route";
 import cartRoutes from "./routes/cart.route";
 import wishlistRoutes from "./routes/wishlist.route";
 import notificationRoutes from "./routes/notifications.route";
+import pricingRoutes from "./routes/pricing.route";
 import { paystackWebhook } from "./controllers/payment.controller";
 
 dotenv.config();
@@ -59,11 +60,9 @@ app.use(express.json());
 // Global request throttle across all NON-webhook routes (auth routes add a
 // stricter limiter of their own).
 app.use(
-  rateLimit({
+  makeLimiter({
     windowMs: 15 * 60 * 1000,
     max: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
   })
 );
 
@@ -80,6 +79,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/notification", notificationRoutes);
+app.use("/api/pricing", pricingRoutes);
 app.get("/ping", (req, res) => res.send("pong"));
 
 // ERROR HANDLING

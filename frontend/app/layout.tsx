@@ -16,10 +16,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Moda Pazari",
-  description: "E-commerce Website",
-  icons: {
-    icon: "/images/Moda2.png",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://modapazari.com"
+  ),
+  title: {
+    default: "Moda Pazari — Fashion Marketplace",
+    template: "%s · Moda Pazari",
+  },
+  description:
+    "Shop clothing, footwear and accessories from independent vendors on Moda Pazari — Nigeria's modern fashion marketplace.",
+  keywords: [
+    "fashion",
+    "marketplace",
+    "clothing",
+    "accessories",
+    "Nigeria",
+    "Moda Pazari",
+  ],
+  icons: { icon: "/images/Moda2.png" },
+  openGraph: {
+    title: "Moda Pazari — Fashion Marketplace",
+    description:
+      "Shop clothing, footwear and accessories from independent vendors.",
+    type: "website",
+    siteName: "Moda Pazari",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Moda Pazari — Fashion Marketplace",
+    description:
+      "Shop clothing, footwear and accessories from independent vendors.",
   },
 };
 

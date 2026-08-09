@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { adminService, type ApiOrder } from "@/services/api";
+import { Pager } from "../_components/pager";
 
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
 
@@ -11,7 +13,10 @@ const STATUS_STYLES: Record<ApiOrder["status"], string> = {
   shipped: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   delivered: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   cancelled: "bg-red-500/10 text-red-500",
+  refunded: "bg-muted/20 text-muted",
 };
+
+const REFUNDABLE = ["paid", "shipped", "delivered"];
 
 const buyerName = (b: ApiOrder["buyer"]) => {
   if (!b || typeof b === "string") return "—";
@@ -21,18 +26,37 @@ const buyerName = (b: ApiOrder["buyer"]) => {
 export default function AdminOrders() {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await adminService.getOrders();
-      setOrders(data);
+      const { data } = await adminService.getOrders(page);
+      setOrders(data.items);
+      setPages(data.pages);
     } catch {
       /* interceptor toasts */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
+
+  const refund = async (o: ApiOrder) => {
+    if (!window.confirm(`Refund order #${o._id.slice(-6)}? This can't be undone.`))
+      return;
+    try {
+      setBusyId(o._id);
+      const { data } = await adminService.refundOrder(o._id);
+      setOrders((list) => list.map((x) => (x._id === o._id ? data : x)));
+      toast.success("Order refunded");
+    } catch {
+      /* interceptor toasts */
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -65,6 +89,7 @@ export default function AdminOrders() {
                   <th className="py-3 pr-4 font-medium">Total</th>
                   <th className="py-3 pr-4 font-medium">Status</th>
                   <th className="py-3 pr-4 font-medium">Date</th>
+                  <th className="py-3 pr-4 text-right font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,11 +120,24 @@ export default function AdminOrders() {
                           })
                         : "—"}
                     </td>
+                    <td className="py-3 pr-4 text-right">
+                      {REFUNDABLE.includes(o.status) ? (
+                        <button
+                          disabled={busyId === o._id}
+                          onClick={() => refund(o)}
+                          className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+                        >
+                          Refund
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-sm text-muted">
+                    <td colSpan={7} className="py-12 text-center text-sm text-muted">
                       No orders yet.
                     </td>
                   </tr>
@@ -108,6 +146,7 @@ export default function AdminOrders() {
             </table>
           </div>
         )}
+        <Pager page={page} pages={pages} onPage={setPage} />
       </div>
     </div>
   );

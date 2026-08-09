@@ -11,6 +11,19 @@ export interface IUser extends Document{
     storeDescription:string;
     creditLimit:number;
     availableBalance:number;
+    // Vendor onboarding gate — only "approved" vendors can list/sell.
+    vendorStatus:'pending'|'approved'|'rejected';
+    emailVerified:boolean;
+    // Password reset (hashed token + expiry).
+    resetPasswordToken?:string;
+    resetPasswordExpires?:Date;
+    // Email verification token (hashed).
+    emailVerifyToken?:string;
+    // Paystack subaccount code for split payouts, plus the bank details used.
+    paystackSubaccount?:string;
+    bankName?:string;
+    bankCode?:string;
+    accountNumber?:string;
     matchPassword(enteredPassword:string):Promise<boolean>
 }
 
@@ -54,7 +67,23 @@ const userSchema = new Schema<IUser>(
         availableBalance:{
             type:Number,
             default:0
-        }
+        },
+        vendorStatus:{
+            type:String,
+            enum:['pending','approved','rejected'],
+            default:'pending'
+        },
+        emailVerified:{
+            type:Boolean,
+            default:false
+        },
+        resetPasswordToken:{ type:String },
+        resetPasswordExpires:{ type:Date },
+        emailVerifyToken:{ type:String },
+        paystackSubaccount:{ type:String },
+        bankName:{ type:String },
+        bankCode:{ type:String },
+        accountNumber:{ type:String }
     },
     {timestamps:true}
 )
