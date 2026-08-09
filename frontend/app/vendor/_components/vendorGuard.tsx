@@ -35,5 +35,25 @@ export function VendorGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  const pending = user?.vendorStatus === "pending" || !user?.vendorStatus;
+  const rejected = user?.vendorStatus === "rejected";
+
+  return (
+    <>
+      {(pending || rejected) && (
+        <div
+          className={`fixed inset-x-0 top-[calc(4rem+env(safe-area-inset-top,0px))] z-30 px-4 py-2.5 text-center text-sm ${
+            rejected
+              ? "bg-red-500/10 text-red-500"
+              : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          }`}
+        >
+          {rejected
+            ? "Your vendor application was not approved. Contact support for details."
+            : "Your vendor account is pending approval — you can explore the dashboard, but product listing is disabled until an admin approves you."}
+        </div>
+      )}
+      {children}
+    </>
+  );
 }

@@ -1,30 +1,65 @@
+import mongoose from "mongoose";
 import Order from "../models/order.model";
-
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+import { restoreStock } from "./stock.service";
 
 /**
- * Cancels orders left "pending" (unpaid) for more than 2 days.
+ * Releases expired stock reservations. Stock is reserved (decremented) at
+ * checkout and held until `reservedUntil`; if payment never completes, this
+ * sweep restores the stock and cancels the order — so unpaid carts can't hold
+ * inventory forever. Each order is processed in its own transaction and re-read
+ * under `status: "pending"` so a payment landing concurrently is never clobbered.
  *
- * Pending orders never had stock decremented (that happens on payment), so
- * cancelling is a plain status update — no stock to restore. Returns the number
- * of orders cancelled.
+ * Returns the number of reservations released.
  */
 export const expireStalePendingOrders = async (): Promise<number> => {
-  const cutoff = new Date(Date.now() - TWO_DAYS_MS);
-  const result = await Order.updateMany(
-    { status: "pending", createdAt: { $lt: cutoff } },
-    { $set: { status: "cancelled" } }
-  );
-  const count = result.modifiedCount ?? 0;
-  if (count > 0) {
-    console.log(`[maintenance] cancelled ${count} stale pending order(s)`);
+  const stale = await Order.find({
+    status: "pending",
+    reservedUntil: { $lt: new Date() },
+  })
+    .select("_id")
+    .limit(200);
+
+  let released = 0;
+
+  for (const { _id } of stale) {
+    const session = await mongoose.startSession();
+    let didRelease = false;
+    try {
+      await session.withTransaction(async () => {
+        didRelease = false;
+        const order = await Order.findOne({
+          _id,
+          status: "pending",
+        }).session(session);
+        if (!order) return; // already paid/cancelled by another path
+
+        if (order.stockReserved) {
+          for (const item of order.orderItems) {
+            await restoreStock(session, item.product, item.size, item.quantity);
+          }
+        }
+        order.status = "cancelled";
+        order.stockReserved = false;
+        order.reservedUntil = undefined;
+        await order.save({ session });
+        didRelease = true;
+      });
+    } catch (err) {
+      console.error("[maintenance] failed to release order", String(_id), err);
+    } finally {
+      await session.endSession();
+    }
+    if (didRelease) released++;
   }
-  return count;
+
+  if (released > 0) {
+    console.log(`[maintenance] released ${released} expired reservation(s)`);
+  }
+  return released;
 };
 
 /**
- * Runs the sweep now and then hourly. Called once from server startup. Each run
- * is guarded so a failure never crashes the process.
+ * Runs the sweep now and then every 5 minutes. Called once from server startup.
  */
 export const startOrderMaintenance = (): void => {
   const run = () => {
@@ -33,5 +68,5 @@ export const startOrderMaintenance = (): void => {
     );
   };
   run();
-  setInterval(run, 60 * 60 * 1000).unref();
+  setInterval(run, 5 * 60 * 1000).unref();
 };

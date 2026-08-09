@@ -22,14 +22,24 @@ export interface IOrder extends Document{
         name?:string;
         quantity:number;
         price:number;
+        // Selected variant, snapshotted onto the order.
+        color?:string;
+        size?:string;
     }[];
     shippingAddress?:IShippingAddress;
+    subtotal?:number;
+    tax?:number;
+    shippingFee?:number;
     totalPrice:number;
-    status:"pending"|"paid"|"shipped"|"delivered"|"cancelled";
+    status:"pending"|"paid"|"shipped"|"delivered"|"cancelled"|"refunded";
     paymentReference?:string;
     // Client-supplied key that makes order creation idempotent (a double-click
     // or retried request returns the same order instead of creating a second).
     idempotencyKey?:string;
+    // Stock is reserved (decremented) at checkout and held until this time; if
+    // payment doesn't complete, a sweep releases it and cancels the order.
+    stockReserved?:boolean;
+    reservedUntil?:Date;
 }
 
 const shippingAddressSchema = new Schema<IShippingAddress>(
@@ -77,6 +87,12 @@ const orderSchema = new Schema<IOrder>(
                     type:Number,
                     required:true
                 },
+                color:{
+                    type:String
+                },
+                size:{
+                    type:String
+                },
             }
         ],
         // Required for the pay-now checkout flow (validated in order.service);
@@ -84,13 +100,16 @@ const orderSchema = new Schema<IOrder>(
         shippingAddress:{
             type:shippingAddressSchema
         },
+        subtotal:{ type:Number },
+        tax:{ type:Number },
+        shippingFee:{ type:Number },
         totalPrice:{
             type:Number,
             required:true
         },
         status:{
             type:String,
-            enum:["pending","paid","shipped","delivered","cancelled"],
+            enum:["pending","paid","shipped","delivered","cancelled","refunded"],
             default:"pending"
         },
         // Paystack transaction reference, set at initialise time and used by the
@@ -102,7 +121,9 @@ const orderSchema = new Schema<IOrder>(
         },
         idempotencyKey:{
             type:String
-        }
+        },
+        stockReserved:{ type:Boolean, default:false },
+        reservedUntil:{ type:Date }
     },
     {timestamps:true}
 )

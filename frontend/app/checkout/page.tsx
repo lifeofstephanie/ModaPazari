@@ -1,7 +1,12 @@
 "use client";
 
 import { useCartStore } from "@/store/useCartStore";
-import { orderService, paymentService } from "@/services/api";
+import {
+  orderService,
+  paymentService,
+  pricingService,
+  type PricingConfig,
+} from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { LockIcon, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -47,7 +52,16 @@ export default function Checkout() {
       : String(Date.now())
   );
 
+  const [pricing, setPricing] = useState<PricingConfig | null>(null);
+
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    pricingService
+      .get()
+      .then(({ data }) => setPricing(data))
+      .catch(() => {});
+  }, []);
 
   // Prefill name from the signed-in user; guard the route.
   useEffect(() => {
@@ -69,6 +83,13 @@ export default function Checkout() {
       items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0),
     [items]
   );
+
+  // Display estimate mirroring the server's rules; the server recomputes the
+  // authoritative amount at checkout.
+  const tax = pricing ? Math.round(subtotal * (pricing.vatPercent / 100)) : 0;
+  const shipping =
+    pricing && subtotal < pricing.freeShippingThreshold ? pricing.shippingFee : 0;
+  const total = subtotal + tax + shipping;
 
   const set = (key: keyof AddressForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -94,7 +115,12 @@ export default function Checkout() {
       setSubmitting(true);
       // 1. Create the pending order (server re-prices from the DB).
       const { data: order } = await orderService.checkout(
-        items.map((i) => ({ product: i.productId, quantity: i.quantity })),
+        items.map((i) => ({
+          product: i.productId,
+          quantity: i.quantity,
+          color: i.color || undefined,
+          size: i.size || undefined,
+        })),
         form,
         idempotencyKey
       );
@@ -237,6 +263,11 @@ export default function Checkout() {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-accent">{item.title}</p>
+                    {(item.color || item.size) && (
+                      <p className="text-xs text-muted">
+                        {[item.color, item.size].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     <p className="text-xs text-muted">{item.quantity}x</p>
                     <p className="text-sm">{naira(Number(item.price))}</p>
                   </div>
@@ -258,12 +289,16 @@ export default function Checkout() {
               <span>{naira(subtotal)}</span>
             </div>
             <div className="flex justify-between text-muted">
+              <span>VAT{pricing ? ` (${pricing.vatPercent}%)` : ""}</span>
+              <span>{naira(tax)}</span>
+            </div>
+            <div className="flex justify-between text-muted">
               <span>Shipping</span>
-              <span>Free</span>
+              <span>{shipping === 0 ? "Free" : naira(shipping)}</span>
             </div>
             <div className="flex justify-between pt-1 text-base font-semibold">
               <span>Total</span>
-              <span className="text-accent">{naira(subtotal)}</span>
+              <span className="text-accent">{naira(total)}</span>
             </div>
           </div>
 

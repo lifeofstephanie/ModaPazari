@@ -3,6 +3,8 @@ import Order, { IOrder, IShippingAddress } from "../models/order.model";
 import User from "../models/user.model";
 import Product from "../models/product.model";
 import { scoreOrder } from "./fraud.service";
+import { computeTotals } from "./pricing.service";
+import { decrementStock } from "./stock.service";
 
 export interface CreateOrderInput {
     buyer: string;
@@ -95,6 +97,8 @@ export const createOrder = async (input: CreateOrderInput): Promise<IOrder> => {
 export interface CheckoutItemInput {
     product: string;
     quantity: number;
+    color?: string;
+    size?: string;
 }
 
 export interface CheckoutInput {
@@ -123,10 +127,11 @@ const isDuplicateKeyError = (err: unknown): boolean =>
  * Creates a `pending` order for a pay-now (Paystack) checkout.
  *
  * Unlike createOrder this does NOT touch the buyer's balance or run the credit /
- * fraud checks — those belong to the store-credit flow. Stock is validated but
- * NOT decremented here; the decrement happens once payment is confirmed in the
- * webhook (see paystackFulfillment.service). Prices AND product names are read
- * from the DB (never trusted from the client) and snapshotted onto the order.
+ * fraud checks — those belong to the store-credit flow. Stock is RESERVED here
+ * (decremented inside a transaction, variant-aware) and held until reservedUntil;
+ * if payment doesn't complete a sweep releases it (orderMaintenance.service).
+ * Fulfilment therefore does not decrement again. Prices AND product names are
+ * read from the DB (never trusted from the client) and snapshotted onto the order.
  *
  * Idempotent when an idempotencyKey is supplied: a repeated request (double-click
  * or client retry) returns the existing order instead of creating a duplicate.
@@ -169,48 +174,118 @@ export const createPendingOrder = async (
     }
 
     const ids = input.items.map((i) => i.product);
-    const products = await Product.find({
-        _id: { $in: ids },
-        status: "approved",
-    });
-    const byId = new Map(products.map((p) => [String(p._id), p]));
+    const reservationMs =
+        (Number(process.env.RESERVATION_MINUTES) || 30) * 60 * 1000;
 
-    const orderItems: IOrder["orderItems"] = [];
-    let totalPrice = 0;
-
-    for (const it of input.items) {
-        const product = byId.get(it.product) as any;
-        if (!product) {
-            throw new OrderError(`Product ${it.product} is unavailable`, 400);
-        }
-        if (product.stock < it.quantity) {
-            throw new OrderError(
-                `Insufficient stock for "${product.name}"`,
-                409
-            );
-        }
-        orderItems.push({
-            product: product._id,
-            name: product.name,
-            quantity: it.quantity,
-            price: product.price,
-        });
-        totalPrice += product.price * it.quantity;
-    }
-
+    const session = await mongoose.startSession();
     try {
-        const order = await Order.create({
-            buyer: input.buyer,
-            orderItems,
-            shippingAddress: address,
-            totalPrice,
-            status: "pending",
-            idempotencyKey: input.idempotencyKey,
+        let result: IOrder | undefined;
+
+        await session.withTransaction(async () => {
+            // Idempotency inside the transaction (also guarded by a unique index).
+            if (input.idempotencyKey) {
+                const existing = await Order.findOne({
+                    buyer: input.buyer,
+                    idempotencyKey: input.idempotencyKey,
+                }).session(session);
+                if (existing) {
+                    result = existing;
+                    return;
+                }
+            }
+
+            const products = await Product.find({
+                _id: { $in: ids },
+                status: "approved",
+            }).session(session);
+            const byId = new Map(products.map((p) => [String(p._id), p]));
+
+            const orderItems: IOrder["orderItems"] = [];
+            let subtotal = 0;
+
+            for (const it of input.items) {
+                const product = byId.get(it.product) as any;
+                if (!product) {
+                    throw new OrderError(
+                        `Product ${it.product} is unavailable`,
+                        400
+                    );
+                }
+
+                const hasVariants =
+                    Array.isArray(product.variants) &&
+                    product.variants.length > 0;
+                if (hasVariants && !it.size) {
+                    throw new OrderError(
+                        `Select a size for "${product.name}"`,
+                        400
+                    );
+                }
+                if (
+                    hasVariants &&
+                    !product.variants.some((v: any) => v.size === it.size)
+                ) {
+                    throw new OrderError(
+                        `Size "${it.size}" is unavailable for "${product.name}"`,
+                        400
+                    );
+                }
+
+                // Reserve stock atomically. A guarded decrement is what makes
+                // concurrent checkouts for the last unit safe — only one wins.
+                const reserved = await decrementStock(
+                    session,
+                    product,
+                    it.size,
+                    it.quantity
+                );
+                if (!reserved) {
+                    throw new OrderError(
+                        `Insufficient stock for "${product.name}"${
+                            it.size ? ` (${it.size})` : ""
+                        }`,
+                        409
+                    );
+                }
+
+                orderItems.push({
+                    product: product._id,
+                    name: product.name,
+                    quantity: it.quantity,
+                    price: product.price,
+                    color: it.color,
+                    size: it.size,
+                });
+                subtotal += product.price * it.quantity;
+            }
+
+            // Server-authoritative totals: VAT + shipping on the DB-priced subtotal.
+            const totals = computeTotals(subtotal);
+
+            const created = await Order.create(
+                [
+                    {
+                        buyer: input.buyer,
+                        orderItems,
+                        shippingAddress: address,
+                        subtotal: totals.subtotal,
+                        tax: totals.tax,
+                        shippingFee: totals.shippingFee,
+                        totalPrice: totals.total,
+                        status: "pending",
+                        idempotencyKey: input.idempotencyKey,
+                        stockReserved: true,
+                        reservedUntil: new Date(Date.now() + reservationMs),
+                    },
+                ],
+                { session }
+            );
+            result = created[0];
         });
-        return order;
+
+        return result as IOrder;
     } catch (err) {
-        // Concurrent duplicate (same buyer + idempotencyKey raced past the fast
-        // path); the unique index rejected it — return the winner.
+        // Concurrent duplicate key raced past the checks — return the winner.
         if (isDuplicateKeyError(err) && input.idempotencyKey) {
             const existing = await Order.findOne({
                 buyer: input.buyer,
@@ -219,5 +294,7 @@ export const createPendingOrder = async (
             if (existing) return existing;
         }
         throw err;
+    } finally {
+        await session.endSession();
     }
 };

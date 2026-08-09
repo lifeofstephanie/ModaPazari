@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { adminService, type AdminUser } from "@/services/api";
+import { Pager } from "../_components/pager";
 
 const ROLE_STYLES: Record<AdminUser["role"], string> = {
   admin: "bg-accent-soft text-accent",
@@ -15,18 +16,21 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await adminService.getUsers();
-      setUsers(data);
+      const { data } = await adminService.getUsers(page);
+      setUsers(data.items);
+      setPages(data.pages);
     } catch {
       /* interceptor toasts */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -131,6 +135,7 @@ export default function AdminUsers() {
             </table>
           </div>
         )}
+        <Pager page={page} pages={pages} onPage={setPage} />
       </div>
     </div>
   );

@@ -7,6 +7,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  getBanks,
+  getPayoutAccount,
+  setupPayoutAccount,
 } from "../controllers/vendor.controller";
 import { protect } from "../middleware/auth";
 import { authorizeRoles } from "../middleware/roles";
@@ -25,5 +28,9 @@ router.delete("/products/:id", deleteProduct);
 
 router.get("/orders", getVendorOrders);
 router.patch("/orders/:id/status", updateVendorOrderStatus);
+
+router.get("/banks", getBanks);
+router.get("/payout-account", getPayoutAccount);
+router.post("/payout-account", setupPayoutAccount);
 
 export default router;

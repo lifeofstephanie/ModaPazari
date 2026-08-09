@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Truck } from "lucide-react";
+import toast from "react-hot-toast";
 import { vendorService, type ApiOrder } from "@/services/api";
 import type { OrderStatus, VendorOrder } from "../_data/orders";
 import { InvoiceModal, type InvoiceLineItem } from "./invoiceModal";
@@ -56,6 +57,7 @@ const toLineItems = (o: ApiOrder): InvoiceLineItem[] =>
     name: i.name || "Item",
     qty: i.quantity,
     amount: i.price * i.quantity,
+    variant: [i.color, i.size].filter(Boolean).join(" · ") || undefined,
   }));
 
 type OrdersViewProps = { variant: "open" | "completed" };
@@ -69,6 +71,7 @@ export const OrdersView = ({ variant }: OrdersViewProps) => {
     order: VendorOrder;
     lineItems: InvoiceLineItem[];
   } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const isOpen = variant === "open";
 
@@ -85,12 +88,31 @@ export const OrdersView = ({ variant }: OrdersViewProps) => {
     }
   }, []);
 
+  // Paid -> shipped -> delivered. Only these transitions are vendor-driven.
+  const advance = async (o: ApiOrder) => {
+    const next = o.status === "paid" ? "shipped" : "delivered";
+    try {
+      setBusyId(o._id);
+      const { data } = await vendorService.updateOrderStatus(o._id, next);
+      setOrders((list) => list.map((x) => (x._id === o._id ? data : x)));
+      toast.success(`Order #${o._id.slice(-6)} marked ${next}`);
+    } catch {
+      /* interceptor toasts */
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   useEffect(() => {
     load();
   }, [load]);
 
   const base = orders.filter((o) =>
-    variant === "completed" ? o.status === "delivered" : o.status !== "delivered"
+    variant === "completed"
+      ? o.status === "delivered"
+      : o.status !== "delivered" &&
+        o.status !== "cancelled" &&
+        o.status !== "refunded"
   );
 
   const rows = base
@@ -182,15 +204,27 @@ export const OrdersView = ({ variant }: OrdersViewProps) => {
                         {row.status}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 text-right">
-                      <button
-                        onClick={() =>
-                          setInvoice({ order: row, lineItems: toLineItems(api) })
-                        }
-                        className="text-sm font-medium text-accent hover:text-accent-strong"
-                      >
-                        View
-                      </button>
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center justify-end gap-3">
+                        {isOpen && (api.status === "paid" || api.status === "shipped") && (
+                          <button
+                            disabled={busyId === api._id}
+                            onClick={() => advance(api)}
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent-soft disabled:opacity-50"
+                          >
+                            <Truck size={13} />
+                            {api.status === "paid" ? "Mark shipped" : "Mark delivered"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            setInvoice({ order: row, lineItems: toLineItems(api) })
+                          }
+                          className="text-sm font-medium text-accent hover:text-accent-strong"
+                        >
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

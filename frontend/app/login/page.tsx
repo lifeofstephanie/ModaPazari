@@ -9,6 +9,7 @@ import { loginSchema } from "@/schema/loginSchema";
 import { authService } from "@/services/api";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCartStore } from "@/store/useCartStore";
 import { useEffect } from "react";
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -44,7 +45,11 @@ export default function LoginPage() {
         lastName: res.data.lastName,
         email: res.data.email,
         role: res.data.role,
+        vendorStatus: res.data.vendorStatus,
+        emailVerified: res.data.emailVerified,
       });
+      // Fold the guest cart into the server cart so it follows the user.
+      useCartStore.getState().mergeGuestCartOnLogin();
       toast.success("Logged in successfully");
       router.push(destinationFor(res.data.role));
     } catch (e) {
@@ -104,6 +109,13 @@ export default function LoginPage() {
               />
               {errors.password && <Err>{errors.password.message}</Err>}
             </Field>
+
+            <Link
+              href="/forgot-password"
+              className="-mt-1 self-end text-xs text-accent hover:underline"
+            >
+              Forgot password?
+            </Link>
 
             <button
               type="submit"

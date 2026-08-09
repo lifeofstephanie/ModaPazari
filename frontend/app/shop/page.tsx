@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { productService, type ApiProduct } from "@/services/api";
+import {
+  productService,
+  DEPARTMENTS,
+  type ApiProduct,
+  type Department,
+} from "@/services/api";
 
 const FALLBACK_IMG = "/images/image.png";
 const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function Shop() {
   const [items, setItems] = useState<ApiProduct[]>([]);
@@ -15,27 +22,41 @@ export default function Shop() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
 
-  const load = useCallback(async (nextCursor?: string) => {
-    try {
-      nextCursor ? setLoadingMore(true) : setLoading(true);
-      const { data } = await productService.getFeed({
-        limit: 12,
-        cursor: nextCursor,
-      });
-      setItems((prev) =>
-        nextCursor ? [...prev, ...data.items] : data.items
-      );
-      setCursor(data.nextCursor);
-      setHasMore(data.hasMore);
-      setError(false);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+  const [search, setSearch] = useState("");
+  const [appliedQ, setAppliedQ] = useState("");
+  const [dept, setDept] = useState<Department | "">("");
 
+  // Debounce the search box so we don't hit the API on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setAppliedQ(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const load = useCallback(
+    async (nextCursor?: string) => {
+      try {
+        nextCursor ? setLoadingMore(true) : setLoading(true);
+        const { data } = await productService.getFeed({
+          limit: 12,
+          cursor: nextCursor,
+          q: appliedQ || undefined,
+          department: dept || undefined,
+        });
+        setItems((prev) => (nextCursor ? [...prev, ...data.items] : data.items));
+        setCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+        setError(false);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [appliedQ, dept]
+  );
+
+  // Reloads from scratch whenever the query or department filter changes.
   useEffect(() => {
     load();
   }, [load]);
@@ -65,10 +86,48 @@ export default function Shop() {
           </div>
         </div>
 
+        {/* Search + department filter */}
+        <div className="mt-12 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <label className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 md:max-w-sm">
+            <Search size={18} className="text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products…"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setDept("")}
+              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                dept === ""
+                  ? "border-accent bg-accent-solid text-white"
+                  : "border-border text-muted hover:border-accent hover:text-accent"
+              }`}
+            >
+              All
+            </button>
+            {DEPARTMENTS.filter((d) => d !== "other").map((d) => (
+              <button
+                key={d}
+                onClick={() => setDept(d)}
+                className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                  dept === d
+                    ? "border-accent bg-accent-solid text-white"
+                    : "border-border text-muted hover:border-accent hover:text-accent"
+                }`}
+              >
+                {titleCase(d)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Grid heading */}
-        <div className="mt-14 mb-8 flex items-end justify-between border-b border-border pb-5">
+        <div className="mt-8 mb-8 flex items-end justify-between border-b border-border pb-5">
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            All products
+            {appliedQ ? `Results for “${appliedQ}”` : "All products"}
           </h2>
           {!loading && !error && (
             <span className="text-sm text-muted">{items.length} items</span>

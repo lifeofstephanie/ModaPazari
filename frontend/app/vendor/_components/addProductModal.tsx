@@ -1,23 +1,42 @@
 "use client";
 
-import { X } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { vendorService } from "@/services/api";
+import {
+  vendorService,
+  DEPARTMENTS,
+  SEASONS,
+  type Department,
+  type Season,
+} from "@/services/api";
+import { isUploadConfigured, uploadToCloudinary } from "@/services/upload";
+
+export type SizeVariant = { size: string; stock: number };
 
 export type ProductFormValues = {
   name: string;
   description: string;
   price: number;
   stock: number;
-  category: string;
+  department: Department;
+  season: Season;
+  images: string[];
+  colors: string[];
+  variants: SizeVariant[];
 };
+
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 type AddProductModalProps = {
   isOpen: boolean;
   onClose: () => void;
   /** Prefilled values (edit mode). */
-  initial?: Partial<FormState>;
+  initial?: Partial<FormState> & {
+    images?: string[];
+    colors?: string[];
+    variants?: SizeVariant[];
+  };
   heading?: string;
   submitText?: string;
   /**
@@ -32,7 +51,8 @@ type FormState = {
   description: string;
   price: string;
   stock: string;
-  category: string;
+  department: Department;
+  season: Season;
 };
 
 const EMPTY: FormState = {
@@ -40,10 +60,9 @@ const EMPTY: FormState = {
   description: "",
   price: "",
   stock: "",
-  category: "",
+  department: "other",
+  season: "none",
 };
-
-const CATEGORIES = ["Womenswear", "Menswear", "Accessories", "Footwear", "Outerwear"];
 
 export const AddProductModal = ({
   isOpen,
@@ -54,18 +73,90 @@ export const AddProductModal = ({
   onSave,
 }: AddProductModalProps) => {
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [images, setImages] = useState<string[]>([]);
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("");
+  const [variants, setVariants] = useState<SizeVariant[]>([]);
+  const [sizeInput, setSizeInput] = useState("");
+  const [sizeStock, setSizeStock] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Reset / prefill whenever the modal is opened.
   useEffect(() => {
-    if (isOpen) setForm({ ...EMPTY, ...initial });
+    if (isOpen) {
+      const {
+        images: initialImages,
+        colors: initialColors,
+        variants: initialVariants,
+        ...rest
+      } = initial ?? {};
+      setForm({ ...EMPTY, ...rest });
+      setImages(initialImages ?? []);
+      setColors(initialColors ?? []);
+      setVariants(initialVariants ?? []);
+      setColorInput("");
+      setSizeInput("");
+      setSizeStock("");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  const hasSizes = variants.length > 0;
+  const sizeTotal = variants.reduce((s, v) => s + v.stock, 0);
+
+  const addVariant = () => {
+    const size = sizeInput.trim();
+    const stock = Math.max(0, Math.floor(Number(sizeStock) || 0));
+    if (!size) return;
+    setVariants((prev) =>
+      prev.some((v) => v.size.toLowerCase() === size.toLowerCase())
+        ? prev
+        : [...prev, { size, stock }]
+    );
+    setSizeInput("");
+    setSizeStock("");
+  };
+
+  const removeVariant = (size: string) =>
+    setVariants((prev) => prev.filter((v) => v.size !== size));
 
   if (!isOpen) return null;
 
   const set = (key: keyof FormState, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!isUploadConfigured) {
+      toast.error("Image upload isn't configured yet");
+      return;
+    }
+    try {
+      setUploading(true);
+      const urls = await Promise.all(
+        Array.from(files).map((f) => uploadToCloudinary(f))
+      );
+      setImages((prev) => [...prev, ...urls]);
+    } catch {
+      toast.error("Some images failed to upload");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (url: string) =>
+    setImages((prev) => prev.filter((u) => u !== url));
+
+  const addColor = () => {
+    const c = colorInput.trim();
+    if (!c) return;
+    setColors((prev) => (prev.includes(c) ? prev : [...prev, c]));
+    setColorInput("");
+  };
+
+  const removeColor = (c: string) =>
+    setColors((prev) => prev.filter((x) => x !== c));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,8 +181,12 @@ export const AddProductModal = ({
       name: form.name.trim(),
       description: form.description.trim(),
       price,
-      stock,
-      category: form.category,
+      stock: hasSizes ? sizeTotal : stock,
+      department: form.department,
+      season: form.department === "clothes" ? form.season : "none",
+      images,
+      colors,
+      variants,
     };
 
     try {
@@ -104,10 +199,18 @@ export const AddProductModal = ({
           description: values.description,
           price: values.price,
           stock: values.stock,
+          images: values.images,
+          colors: values.colors,
+          variants: values.variants,
+          department: values.department,
+          season: values.season,
         });
         toast.success("Product submitted for review");
       }
       setForm(EMPTY);
+      setImages([]);
+      setColors([]);
+      setVariants([]);
       onClose();
     } catch {
       // api interceptor already surfaces the error toast
@@ -179,28 +282,204 @@ export const AddProductModal = ({
                 id="p-stock"
                 type="number"
                 min={0}
-                value={form.stock}
+                value={hasSizes ? sizeTotal : form.stock}
                 onChange={(e) => set("stock", e.target.value)}
                 placeholder="0"
-                className="modal-input"
+                disabled={hasSizes}
+                className="modal-input disabled:opacity-60"
               />
+              {hasSizes && (
+                <span className="text-xs text-muted">Managed by sizes below</span>
+              )}
             </Field>
           </div>
 
-          <Field label="Category" htmlFor="p-cat">
-            <select
-              id="p-cat"
-              value={form.category}
-              onChange={(e) => set("category", e.target.value)}
-              className="modal-input"
-            >
-              <option value="">Select category</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+          <Field label="Sizes & stock (optional)" htmlFor="p-size">
+            <div className="flex gap-2">
+              <input
+                id="p-size"
+                value={sizeInput}
+                onChange={(e) => setSizeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addVariant();
+                  }
+                }}
+                placeholder="Size (e.g. S, M, 42)"
+                className="modal-input flex-1"
+              />
+              <input
+                value={sizeStock}
+                onChange={(e) => setSizeStock(e.target.value)}
+                type="number"
+                min={0}
+                placeholder="Qty"
+                className="modal-input w-24"
+              />
+              <button
+                type="button"
+                onClick={addVariant}
+                className="rounded-md border border-border px-3 text-sm transition-colors hover:bg-surface"
+              >
+                Add
+              </button>
+            </div>
+            {hasSizes && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {variants.map((v) => (
+                  <span
+                    key={v.size}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-3 pr-2 text-xs"
+                  >
+                    <span className="font-medium">{v.size}</span>
+                    <span className="text-muted">· {v.stock}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(v.size)}
+                      aria-label={`Remove ${v.size}`}
+                      className="text-muted hover:text-red-500"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </Field>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Department" htmlFor="p-dept">
+              <select
+                id="p-dept"
+                value={form.department}
+                onChange={(e) => set("department", e.target.value)}
+                className="modal-input"
+              >
+                {DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>
+                    {titleCase(d)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            {/* Season only matters for clothes. */}
+            {form.department === "clothes" && (
+              <Field label="Season" htmlFor="p-season">
+                <select
+                  id="p-season"
+                  value={form.season}
+                  onChange={(e) => set("season", e.target.value)}
+                  className="modal-input"
+                >
+                  {SEASONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "none" ? "None / all-season" : titleCase(s)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+          </div>
+
+          <Field label="Available colours (optional)" htmlFor="p-color">
+            <div className="flex gap-2">
+              <input
+                id="p-color"
+                value={colorInput}
+                onChange={(e) => setColorInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addColor();
+                  }
+                }}
+                placeholder="e.g. Black, Beige, #7a2048"
+                className="modal-input flex-1"
+              />
+              <button
+                type="button"
+                onClick={addColor}
+                className="rounded-md border border-border px-3 text-sm transition-colors hover:bg-surface"
+              >
+                Add
+              </button>
+            </div>
+            {colors.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {colors.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-1.5 pr-2 text-xs"
+                  >
+                    <span
+                      className="h-4 w-4 rounded-full border border-border"
+                      style={{ backgroundColor: c }}
+                    />
+                    {c}
+                    <button
+                      type="button"
+                      onClick={() => removeColor(c)}
+                      aria-label={`Remove ${c}`}
+                      className="text-muted hover:text-red-500"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </Field>
+
+          <Field label="Images" htmlFor="p-images">
+            <div className="flex flex-wrap gap-3">
+              {images.map((url) => (
+                <div
+                  key={url}
+                  className="relative h-20 w-20 overflow-hidden rounded-md border border-border"
+                >
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    aria-label="Remove image"
+                    className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-foreground/70 text-white"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
               ))}
-            </select>
+
+              {isUploadConfigured ? (
+                <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-muted transition-colors hover:border-accent hover:text-accent">
+                  {uploading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus size={18} />
+                      <span className="text-[10px]">Upload</span>
+                    </>
+                  )}
+                  <input
+                    id="p-images"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      handleFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              ) : (
+                <p className="text-xs text-muted">
+                  Image upload isn&apos;t configured yet.
+                </p>
+              )}
+            </div>
           </Field>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -213,7 +492,7 @@ export const AddProductModal = ({
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploading}
               className="rounded-md bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:opacity-60"
             >
               {submitting ? "Saving…" : submitText}

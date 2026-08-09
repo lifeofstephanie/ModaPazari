@@ -3,6 +3,7 @@
 import { Camera, Info, KeyRound, Mail, User2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { PayoutAccount } from "../_components/payoutAccount";
 
 type Toggles = {
   notifications: boolean;
@@ -36,6 +37,10 @@ export default function SettingsPage() {
           Account
         </p>
         <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Settings</h1>
+      </div>
+
+      <div className="mb-6">
+        <PayoutAccount />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
