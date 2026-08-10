@@ -47,6 +47,28 @@ export type SigninRequest = {
   password: string;
 };
 
+export interface UserAddress {
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+}
+
+export interface UserProfile {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: "buyer" | "vendor" | "admin";
+  avatar?: string;
+  address?: UserAddress;
+  vendorStatus?: "pending" | "approved" | "rejected";
+  emailVerified?: boolean;
+}
+
 export const authService = {
   signUp: (request: SignupRequest) => AXIOS.post("api/auth/register", request),
   sigIn: (request: SigninRequest) => AXIOS.post("api/auth/login", request),
@@ -56,6 +78,15 @@ export const authService = {
     AXIOS.post("api/auth/reset-password", payload),
   verifyEmail: (payload: { email: string; token: string }) =>
     AXIOS.post("api/auth/verify-email", payload),
+  getMe: () => AXIOS.get<UserProfile>("api/auth/me"),
+  updateMe: (body: {
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    address?: UserAddress;
+  }) => AXIOS.put<UserProfile>("api/auth/me", body),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    AXIOS.put("api/auth/password", body),
 };
 
 export type ProductVariant = { size: string; stock: number };

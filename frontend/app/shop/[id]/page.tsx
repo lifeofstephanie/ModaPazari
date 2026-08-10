@@ -559,6 +559,7 @@ function ReviewsSection({
   onAdded: () => void;
 }) {
   const [rating, setRating] = useState(5);
+  const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -578,33 +579,91 @@ function ReviewsSection({
     }
   };
 
+  const fmt = (d?: string) =>
+    d
+      ? new Date(d).toLocaleDateString("en-NG", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+  const initials = (name: string) =>
+    name
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "U";
+
   return (
     <section className="mt-16 border-t border-border pt-10">
-      <div className="flex flex-wrap items-center gap-4">
-        <h2 className="text-2xl font-semibold">Reviews</h2>
-        {reviews.length > 0 && (
-          <span className="flex items-center gap-2 text-sm text-muted">
-            <Stars value={avg} /> {avg.toFixed(1)} · {reviews.length} review
-            {reviews.length === 1 ? "" : "s"}
-          </span>
-        )}
-      </div>
+      <h2 className="text-2xl font-semibold tracking-tight">Customer reviews</h2>
 
+      {/* Rating summary */}
+      {reviews.length > 0 && (
+        <div className="mt-6 grid max-w-2xl gap-6 rounded-2xl border border-border bg-card p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
+          <div className="text-center sm:border-r sm:border-border sm:pr-10">
+            <p className="text-5xl font-bold leading-none">{avg.toFixed(1)}</p>
+            <div className="mt-2 flex justify-center">
+              <Stars value={avg} />
+            </div>
+            <p className="mt-1.5 text-xs text-muted">
+              {reviews.length} review{reviews.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {[5, 4, 3, 2, 1].map((star) => {
+              const count = reviews.filter(
+                (r) => Math.round(r.rating) === star
+              ).length;
+              const pct = reviews.length ? (count / reviews.length) * 100 : 0;
+              return (
+                <div key={star} className="flex items-center gap-2 text-xs">
+                  <span className="flex w-6 items-center gap-0.5 text-muted">
+                    {star}
+                    <Star size={11} className="text-amber-400" fill="currentColor" />
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className="h-full rounded-full bg-amber-400 transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="w-5 text-right text-muted">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Write a review */}
       {canReview ? (
-        <form onSubmit={submit} className="mt-6 max-w-xl rounded-2xl border border-border bg-card p-5">
-          <p className="mb-2 text-sm font-medium">Write a review</p>
-          <div className="mb-3 flex items-center gap-1">
+        <form
+          onSubmit={submit}
+          className="mt-6 max-w-2xl rounded-2xl border border-border bg-card p-5"
+        >
+          <p className="mb-3 text-sm font-medium">Write a review</p>
+          <div
+            className="mb-3 flex items-center gap-1"
+            onMouseLeave={() => setHover(0)}
+          >
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setRating(n)}
+                onMouseEnter={() => setHover(n)}
                 aria-label={`${n} star`}
+                className="transition-transform hover:scale-110"
               >
                 <Star
-                  size={22}
-                  className={n <= rating ? "text-amber-400" : "text-border"}
-                  fill={n <= rating ? "currentColor" : "none"}
+                  size={24}
+                  className={
+                    n <= (hover || rating) ? "text-amber-400" : "text-border"
+                  }
+                  fill={n <= (hover || rating) ? "currentColor" : "none"}
                 />
               </button>
             ))}
@@ -612,42 +671,63 @@ function ReviewsSection({
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your thoughts…"
+            placeholder="Share what you liked (fit, quality, delivery)…"
             rows={3}
-            className="w-full rounded-lg border border-border bg-background p-3 text-sm outline-none focus:border-accent"
+            className="w-full resize-none rounded-lg border border-border bg-background p-3 text-sm outline-none transition-colors focus:border-accent"
           />
           <button
             type="submit"
             disabled={submitting}
-            className="mt-3 rounded-md bg-accent-solid px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:opacity-60"
+            className="mt-3 rounded-full bg-accent-solid px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-strong disabled:opacity-60"
           >
             {submitting ? "Posting…" : "Post review"}
           </button>
         </form>
       ) : (
-        <p className="mt-4 text-sm text-muted">
-          <Link href="/login" className="text-accent hover:underline">
+        <div className="mt-6 max-w-2xl rounded-2xl border border-dashed border-border p-5 text-sm text-muted">
+          <Link href="/login" className="font-medium text-accent hover:underline">
             Sign in
           </Link>{" "}
-          to write a review.
-        </p>
+          to share your review.
+        </div>
       )}
 
-      <div className="mt-8 space-y-5">
+      {/* Review list */}
+      <div className="mt-8 space-y-4">
         {reviews.length === 0 ? (
-          <p className="text-sm text-muted">No reviews yet — be the first.</p>
+          <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted">
+            No reviews yet — be the first to review this product.
+          </p>
         ) : (
-          reviews.map((r) => (
-            <div key={r._id} className="border-b border-border/60 pb-4 last:border-b-0">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{reviewerName(r.user)}</p>
-                <Stars value={r.rating} />
+          reviews.map((r) => {
+            const name = reviewerName(r.user);
+            return (
+              <div
+                key={r._id}
+                className="rounded-2xl border border-border bg-card p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
+                    {initials(name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium">{name}</p>
+                        <p className="text-xs text-muted">{fmt(r.createdAt)}</p>
+                      </div>
+                      <Stars value={r.rating} />
+                    </div>
+                    {r.comment && (
+                      <p className="mt-2 text-sm leading-relaxed text-muted">
+                        {r.comment}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-              {r.comment && (
-                <p className="mt-1.5 text-sm text-muted">{r.comment}</p>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </section>

@@ -6,7 +6,11 @@ import {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  getMe,
+  updateMe,
+  changePassword,
 } from "../controllers/auth.controller";
+import { protect } from "../middleware/auth";
 import { validateBody } from "../middleware/validate";
 import {
   registerSchema,
@@ -40,5 +44,9 @@ router.post(
   validateBody(resetPasswordSchema),
   resetPassword
 );
+
+router.get("/me", protect, getMe);
+router.put("/me", protect, updateMe);
+router.put("/password", protect, changePassword);
 
 export default router;

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import User from "../models/user.model";
 import generateToken from "../utils/generateToken";
+import { AuthRequest } from "../middleware/auth";
 import { sendEmail, emailTemplates } from "../services/email.service";
 
 // Roles a client is allowed to self-assign at registration. "admin" is
@@ -17,6 +18,7 @@ const authPayload = (user: any) => ({
   lastName: user.lastName,
   email: user.email,
   role: user.role,
+  avatar: user.avatar,
   vendorStatus: user.vendorStatus,
   emailVerified: user.emailVerified,
   token: generateToken(String(user._id)),
@@ -72,6 +74,62 @@ export const loginUser = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// Full profile of the signed-in user (for the profile page).
+export const getMe = async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user?._id).select("-password");
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.json(user);
+};
+
+// Update name / avatar / saved address. Email, role and password are handled by
+// their own dedicated flows and are intentionally not settable here.
+export const updateMe = async (req: AuthRequest, res: Response) => {
+  const { firstName, lastName, avatar, address } = req.body;
+  const user = await User.findById(req.user?._id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  if (typeof firstName === "string" && firstName.trim()) user.firstName = firstName.trim();
+  if (typeof lastName === "string" && lastName.trim()) user.lastName = lastName.trim();
+  if (typeof avatar === "string") user.avatar = avatar;
+  if (address && typeof address === "object") {
+    user.address = {
+      phone: address.phone,
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2,
+      city: address.city,
+      state: address.state,
+      country: address.country || "Nigeria",
+      postalCode: address.postalCode,
+    };
+  }
+
+  await user.save();
+  const safe = user.toObject() as any;
+  delete safe.password;
+  res.json(safe);
+};
+
+// Authenticated password change (Security tab). Requires the current password.
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({
+      message: "Current password and a new password (min 8 chars) are required",
+    });
+  }
+  const user = await User.findById(req.user?._id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  const ok = await user.matchPassword(currentPassword);
+  if (!ok) {
+    return res.status(400).json({ message: "Current password is incorrect" });
+  }
+
+  user.password = newPassword; // pre-save hook re-hashes
+  await user.save();
+  res.json({ message: "Password updated" });
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {

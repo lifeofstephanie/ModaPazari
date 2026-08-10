@@ -45,6 +45,7 @@ export default function LoginPage() {
         lastName: res.data.lastName,
         email: res.data.email,
         role: res.data.role,
+        avatar: res.data.avatar,
         vendorStatus: res.data.vendorStatus,
         emailVerified: res.data.emailVerified,
       });

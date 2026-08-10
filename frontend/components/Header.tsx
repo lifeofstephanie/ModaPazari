@@ -1,12 +1,11 @@
 "use client";
-import { Handbag, Menu, Trash2, X } from "lucide-react";
+import { Handbag, Menu, Trash2, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 
@@ -30,8 +29,7 @@ export const Header = ({ isOverlay = false }) => {
 
   const { items, loadCart, increaseQty, decreaseQty, removeItem } =
     useCartStore();
-  const { user, logout } = useAuthStore();
-  const router = useRouter();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     const timeout = setTimeout(() => setHydrated(true), 0);
@@ -109,6 +107,13 @@ export const Header = ({ isOverlay = false }) => {
             <Link href="/orders">
               <li className="cursor-pointer transition-colors hover:text-accent">
                 ORDERS
+              </li>
+            </Link>
+          )}
+          {hydrated && user && (
+            <Link href="/profile">
+              <li className="cursor-pointer transition-colors hover:text-accent">
+                PROFILE
               </li>
             </Link>
           )}
@@ -207,6 +212,11 @@ export const Header = ({ isOverlay = false }) => {
           {hydrated && user && (
             <Link href="/orders" onClick={() => setMenuOpen(false)}>
               <li className="transition-colors hover:text-accent">MY ORDERS</li>
+            </Link>
+          )}
+          {hydrated && user && (
+            <Link href="/profile" onClick={() => setMenuOpen(false)}>
+              <li className="transition-colors hover:text-accent">PROFILE</li>
             </Link>
           )}
           {hydrated && !user && (

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { ProfileShell } from "./_components/profileShell";
 
 export const metadata: Metadata = {
-  title: "My Orders",
-  description: "Track and review your Moda Pazari orders.",
+  title: "My Account",
+  description: "Manage your Moda Pazari profile, orders and wishlist.",
 };
 
-export default function OrdersLayout({
+export default function ProfileLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -15,7 +16,7 @@ export default function OrdersLayout({
   return (
     <>
       <Header />
-      {children}
+      <ProfileShell>{children}</ProfileShell>
       <Footer />
     </>
   );

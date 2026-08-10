@@ -2,6 +2,7 @@
 
 import { useCartStore } from "@/store/useCartStore";
 import {
+  authService,
   orderService,
   paymentService,
   pricingService,
@@ -62,6 +63,29 @@ export default function Checkout() {
       .then(({ data }) => setPricing(data))
       .catch(() => {});
   }, []);
+
+  // Prefill from the buyer's saved profile address (only fills empty fields).
+  useEffect(() => {
+    if (!mounted || !user) return;
+    authService
+      .getMe()
+      .then(({ data }) =>
+        setForm((f) => ({
+          ...f,
+          fullName:
+            f.fullName ||
+            `${data.firstName ?? ""} ${data.lastName ?? ""}`.trim(),
+          phone: f.phone || data.address?.phone || "",
+          addressLine1: f.addressLine1 || data.address?.addressLine1 || "",
+          addressLine2: f.addressLine2 || data.address?.addressLine2 || "",
+          city: f.city || data.address?.city || "",
+          state: f.state || data.address?.state || "",
+          postalCode: f.postalCode || data.address?.postalCode || "",
+          country: data.address?.country || f.country,
+        }))
+      )
+      .catch(() => {});
+  }, [mounted, user]);
 
   // Prefill name from the signed-in user; guard the route.
   useEffect(() => {

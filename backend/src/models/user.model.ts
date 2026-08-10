@@ -1,12 +1,25 @@
 import mongoose, { Document, Schema } from "mongoose"
 import bcrypt from 'bcryptjs'
 
+export interface IUserAddress {
+    phone?:string;
+    addressLine1?:string;
+    addressLine2?:string;
+    city?:string;
+    state?:string;
+    country?:string;
+    postalCode?:string;
+}
+
 export interface IUser extends Document{
     firstName:string;
     lastName:string;
     email:string;
     password:string;
     role:'admin'|'vendor'|'buyer';
+    // Profile
+    avatar?:string;
+    address?:IUserAddress;
     storeName:string;
     storeDescription:string;
     creditLimit:number;
@@ -53,6 +66,18 @@ const userSchema = new Schema<IUser>(
             type:String,
             enum:['buyer', 'vendor', 'admin'],
             default:'buyer'
+        },
+        avatar:{
+            type:String
+        },
+        address:{
+            phone:{ type:String },
+            addressLine1:{ type:String },
+            addressLine2:{ type:String },
+            city:{ type:String },
+            state:{ type:String },
+            country:{ type:String, default:'Nigeria' },
+            postalCode:{ type:String }
         },
         storeName:{
             type:String

@@ -8,6 +8,7 @@ export interface AuthUser {
   lastName?: string;
   email?: string;
   role?: Role;
+  avatar?: string;
   vendorStatus?: "pending" | "approved" | "rejected";
   emailVerified?: boolean;
 }
